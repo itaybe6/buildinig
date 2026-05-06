@@ -7,16 +7,12 @@ import {
 } from "@my-project/shared";
 import { Button, Input, Label } from "@my-project/ui-web";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -45,41 +41,18 @@ export default function LoginPage() {
       setError(payload.error ?? "התחברות נכשלה");
       return;
     }
-    const session = (payload as { session?: { access_token?: string; refresh_token?: string } })
-      .session;
-    if (session?.access_token && session?.refresh_token) {
-      const { error: sessionErr } = await supabase.auth.setSession({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-      });
-      if (sessionErr) {
-        setError(sessionErr.message ?? "שגיאת שמירת סשן");
-        return;
-      }
-    }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setError("לא התקבל משתמש מהשרת");
-      return;
-    }
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-    const role = profileRow?.role as UserRole | undefined;
-    router.refresh();
-    if (role === "super_admin") {
-      router.replace("/super-admin/dashboard");
-    } else if (role === "resident") {
-      router.replace("/home");
-    } else if (role === "employee") {
-      router.replace("/assignments");
-    } else {
-      router.replace("/dashboard");
-    }
+    const body = payload as { role?: UserRole };
+    const role = body.role as UserRole | undefined;
+    const path =
+      role === "super_admin"
+        ? "/super-admin/dashboard"
+        : role === "resident"
+          ? "/home"
+          : role === "employee"
+            ? "/assignments"
+            : "/dashboard";
+    /** טעינה מלאה — מבטיחה שקוקיות הסשן (שנקבעו ע"י ה-API) יישלחו לשרת */
+    window.location.assign(path);
   }
 
   return (

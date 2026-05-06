@@ -32,7 +32,7 @@ export const getAuthProfile = cache(
     const { data: row } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, role, business_profile_id, tenant_id, building_id, unit_id"
+        "id, full_name, role, business_profile_id, building_id, unit_id"
       )
       .eq("auth_user_id", user.id)
       .maybeSingle();
@@ -40,8 +40,7 @@ export const getAuthProfile = cache(
     if (!row) return null;
 
     const jwtBiz = businessProfileIdFromJwtAppMetadata(user.app_metadata);
-    let businessProfileId =
-      row.business_profile_id ?? jwtBiz ?? row.tenant_id ?? null;
+    let businessProfileId = row.business_profile_id ?? jwtBiz ?? null;
     if (!businessProfileId) {
       businessProfileId = await inferBusinessProfileIdFromProfileLinks(
         supabase,

@@ -4,21 +4,35 @@ import { createAdminClient, hasServiceRoleKey } from "@/lib/supabase/admin";
 import bcrypt from "bcryptjs";
 import { NextResponse, type NextRequest } from "next/server";
 
-const corsHeaders = {
+const corsHeadersOpen = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
-};
+} as const;
+
+/** CORS רק לקריאות cross-origin (מובייל); בדפדפן same-origin — בלי `*` כדי לא לפגוע ב-Set-Cookie */
+function corsHeadersFor(request: NextRequest): Record<string, string> {
+  const origin = request.headers.get("origin");
+  if (!origin) return {};
+  try {
+    if (request.nextUrl.host === new URL(origin).host) {
+      return {};
+    }
+  } catch {
+    return {};
+  }
+  return { ...corsHeadersOpen };
+}
 
 export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
+  return new NextResponse(null, { status: 204, headers: corsHeadersOpen });
 }
 
 export async function POST(request: NextRequest) {
   if (!hasServiceRoleKey()) {
     return NextResponse.json(
       { error: "שרת לא מוגדר לאימות (חסר SUPABASE_SERVICE_ROLE_KEY)" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeadersFor(request) }
     );
   }
 
@@ -28,7 +42,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "בקשה לא תקינה" },
-      { status: 400, headers: corsHeaders }
+      { status: 400, headers: corsHeadersFor(request) }
     );
   }
 
@@ -39,7 +53,7 @@ export async function POST(request: NextRequest) {
   if (phoneVariants.length === 0 || password.length < 6) {
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
-      { status: 401, headers: corsHeaders }
+      { status: 401, headers: corsHeadersFor(request) }
     );
   }
 
@@ -47,7 +61,7 @@ export async function POST(request: NextRequest) {
 
   const { data: profileRows, error: profileError } = await admin
     .from("profiles")
-    .select("id, auth_user_id, password_hash, is_active")
+    .select("id, auth_user_id, password_hash, is_active, role")
     .in("phone", phoneVariants);
 
   if (profileError) {
@@ -56,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
-      { status: 401, headers: corsHeaders }
+      { status: 401, headers: corsHeadersFor(request) }
     );
   }
 
@@ -65,14 +79,14 @@ export async function POST(request: NextRequest) {
   if (!profile?.auth_user_id) {
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
-      { status: 401, headers: corsHeaders }
+      { status: 401, headers: corsHeadersFor(request) }
     );
   }
 
   if (profile.is_active === false) {
     return NextResponse.json(
       { error: "החשבון לא פעיל" },
-      { status: 403, headers: corsHeaders }
+      { status: 403, headers: corsHeadersFor(request) }
     );
   }
 
@@ -83,7 +97,7 @@ export async function POST(request: NextRequest) {
   if (authUserError || !email) {
     return NextResponse.json(
       { error: "חשבון לא מוגדר נכון בשרת — פנה למנהל" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeadersFor(request) }
     );
   }
 
@@ -119,7 +133,10 @@ export async function POST(request: NextRequest) {
     body: Record<string, unknown>,
     status: number
   ) {
-    const res = NextResponse.json(body, { status, headers: corsHeaders });
+    const res = NextResponse.json(body, {
+      status,
+      headers: corsHeadersFor(request),
+    });
     lastAuthCookies.forEach(({ name, value, options }) => {
       res.cookies.set(name, value, options);
     });
@@ -132,7 +149,7 @@ export async function POST(request: NextRequest) {
     if (!passwordOk) {
       return NextResponse.json(
         { error: "פרטי התחברות שגויים" },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeadersFor(request) }
       );
     }
 
@@ -147,7 +164,7 @@ export async function POST(request: NextRequest) {
       console.error("[auth/login] generateLink", linkError);
       return NextResponse.json(
         { error: "שגיאת התחברות פנימית" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeadersFor(request) }
       );
     }
 
@@ -160,12 +177,16 @@ export async function POST(request: NextRequest) {
       console.error("[auth/login] verifyOtp", otpError);
       return NextResponse.json(
         { error: "שגיאת התחברות פנימית" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeadersFor(request) }
       );
     }
 
     return jsonWithSessionCookies(
-      { ok: true, session: otpData.session },
+      {
+        ok: true,
+        session: otpData.session,
+        role: profile.role,
+      },
       200
     );
   }
@@ -183,9 +204,12 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
-      { status: 401, headers: corsHeaders }
+      { status: 401, headers: corsHeadersFor(request) }
     );
   }
 
-  return jsonWithSessionCookies({ ok: true, session: signData.session }, 200);
+  return jsonWithSessionCookies(
+    { ok: true, session: signData.session, role: profile.role },
+    200
+  );
 }
