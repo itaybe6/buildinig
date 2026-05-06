@@ -57,7 +57,7 @@ const initialState: CreateBusinessState | undefined = undefined;
 
 export function AddBusinessForm({
   title = "הוספת עסק חדש",
-  description = "נוצר רשומת tenants ופרופיל עסק (business_profiles). לאחר מכן ניתן לשייך משתמש מנהל ל־tenant זה.",
+  description = "נוצר עסק, פרופיל עסק, וחשבון מנהל (משתמש Auth + רשומת profiles).",
   embedded = false,
   showHeader = !embedded,
   redirectTo,
@@ -167,6 +167,79 @@ export function AddBusinessForm({
               </div>
             </div>
           </section>
+
+          <section className="space-y-5 rounded-2xl border border-primary/25 bg-primary/[0.05] p-5 shadow-inner sm:p-6">
+            <header className="border-b border-primary/15 pb-4">
+              <h3 className="text-base font-semibold tracking-tight">
+                מנהל העסק (כניסה למערכת)
+              </h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                נוצר חשבון התחברות ופרופיל עם תפקיד מנהל, משויך לעסק החדש.
+              </p>
+            </header>
+            <div className="grid gap-5">
+              <div className="grid gap-2">
+                <Label htmlFor="mgr-name" className={labelCls}>
+                  שם מלא — מנהל
+                </Label>
+                <Input
+                  id="mgr-name"
+                  name="manager_full_name"
+                  required
+                  autoComplete="name"
+                  placeholder="למשל: יוסי כהן"
+                  className={inputPremium}
+                />
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 sm:gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="mgr-email" className={labelCls}>
+                    אימייל להתחברות
+                  </Label>
+                  <Input
+                    id="mgr-email"
+                    name="manager_email"
+                    type="email"
+                    required
+                    dir="ltr"
+                    autoComplete="email"
+                    placeholder="manager@example.com"
+                    className={inputPremium}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="mgr-phone" className={labelCls}>
+                    טלפון (אופציונלי)
+                  </Label>
+                  <Input
+                    id="mgr-phone"
+                    name="manager_phone"
+                    type="tel"
+                    dir="ltr"
+                    autoComplete="tel"
+                    placeholder="050-0000000"
+                    className={inputPremium}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="mgr-password" className={labelCls}>
+                  סיסמה ראשונית למנהל
+                </Label>
+                <Input
+                  id="mgr-password"
+                  name="manager_password"
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  dir="ltr"
+                  placeholder="לפחות 6 תווים"
+                  className={inputPremium}
+                />
+              </div>
+            </div>
+          </section>
         </>
       ) : (
         <>
@@ -197,6 +270,57 @@ export function AddBusinessForm({
               placeholder="office@example.com"
               dir="ltr"
             />
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/20 p-4">
+            <p className="mb-4 text-sm font-semibold">מנהל העסק (כניסה למערכת)</p>
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="mgr-name-d">שם מלא — מנהל</Label>
+                <Input
+                  id="mgr-name-d"
+                  name="manager_full_name"
+                  required
+                  autoComplete="name"
+                  placeholder="שם המנהל"
+                />
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="mgr-email-d">אימייל להתחברות</Label>
+                  <Input
+                    id="mgr-email-d"
+                    name="manager_email"
+                    type="email"
+                    required
+                    dir="ltr"
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="mgr-phone-d">טלפון (אופציונלי)</Label>
+                  <Input
+                    id="mgr-phone-d"
+                    name="manager_phone"
+                    type="tel"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="mgr-password-d">סיסמה ראשונית למנהל</Label>
+                <Input
+                  id="mgr-password-d"
+                  name="manager_password"
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  dir="ltr"
+                  placeholder="לפחות 6 תווים"
+                />
+              </div>
+            </div>
           </div>
         </>
       )}

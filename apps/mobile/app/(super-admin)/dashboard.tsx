@@ -1,4 +1,3 @@
-import { AddBusinessCard } from "@/components/super-admin/AddBusinessCard";
 import { supabase } from "@/lib/supabase";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -89,11 +88,17 @@ export default function SuperAdminDashboardScreen() {
     <ScrollView className="flex-1 bg-white px-4 py-4">
       <Text className="mb-1 text-2xl font-bold">סקירת עסק</Text>
       <Text className="mb-4 text-gray-600">
-        תמונה ברמת הפלטפורמה — כל הלקוחות והנכסים. ניתן ליצור עסק חדש
-        (tenants + business_profiles) ישירות מכאן.
+        תמונה ברמת הפלטפורמה — כל הלקוחות והנכסים. להוספת לקוח ומנהל השתמשו
+        בכפתור למטה.
       </Text>
 
-      <AddBusinessCard onCreated={() => void load()} />
+      <Link href="/(super-admin)/tenants/new" asChild>
+        <Pressable className="mb-6 rounded-xl bg-blue-600 px-4 py-3.5 active:opacity-90">
+          <Text className="text-center text-base font-semibold text-white">
+            הוספת לקוח חדש
+          </Text>
+        </Pressable>
+      </Link>
 
       {error ? (
         <Text className="mb-4 text-red-600">{error}</Text>

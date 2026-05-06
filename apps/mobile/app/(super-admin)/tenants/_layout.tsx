@@ -11,7 +11,11 @@ export default function TenantsStackLayout() {
     >
       <Stack.Screen name="index" options={{ title: "לקוחות (מנהלים)" }} />
       <Stack.Screen name="new" options={{ title: "הוספת לקוח חדש" }} />
-      <Stack.Screen name="[id]/buildings" options={{ title: "בניינים" }} />
+      <Stack.Screen name="[id]/index" options={{ title: "בקרה על עסק" }} />
+      <Stack.Screen
+        name="[id]/buildings"
+        options={{ title: "בניינים", headerShown: false }}
+      />
     </Stack>
   );
 }

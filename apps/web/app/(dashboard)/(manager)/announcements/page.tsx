@@ -26,7 +26,7 @@ export default async function AnnouncementsPage() {
       is_pinned,
       expires_at,
       created_at,
-      buildings ( name, city )
+      buildings ( address, city )
     `
     )
     .eq("business_profile_id", ctx.businessProfileId)
@@ -58,7 +58,7 @@ export default async function AnnouncementsPage() {
         <div className="space-y-4">
           {rows.map((row) => {
             const b = row.buildings as unknown as {
-              name: string;
+              address: string;
               city: string;
             } | null;
             return (
@@ -83,7 +83,7 @@ export default async function AnnouncementsPage() {
                     </div>
                   </div>
                   <CardDescription>
-                    {b ? `${b.name}, ${b.city}` : "בניין"}
+                    {b ? `${b.address}, ${b.city}` : "בניין"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

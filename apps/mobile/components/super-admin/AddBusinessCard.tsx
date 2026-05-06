@@ -1,5 +1,4 @@
 import { createBusinessRecords } from "@/lib/create-business";
-import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 import {
   Pressable,
@@ -18,13 +17,17 @@ type Props = {
 
 export function AddBusinessCard({
   title = "הוספת עסק חדש",
-  subtitle = "נוצרים tenants ו-business_profiles. לאחר מכן שייכו מנהל דרך tenant_id בפרופיל.",
+  subtitle = "נוצרים עסק, פרופיל עסק וחשבון מנהל. דורש EXPO_PUBLIC_WEB_APP_ORIGIN לכתובת שרת הווב.",
   onCreated,
   embedded = false,
 }: Props) {
   const [name, setName] = useState("");
   const [legalName, setLegalName] = useState("");
   const [email, setEmail] = useState("");
+  const [mgrName, setMgrName] = useState("");
+  const [mgrEmail, setMgrEmail] = useState("");
+  const [mgrPhone, setMgrPhone] = useState("");
+  const [mgrPassword, setMgrPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "ok" | "err";
@@ -34,22 +37,36 @@ export function AddBusinessCard({
   async function onSubmit() {
     setFeedback(null);
     setBusy(true);
-    const res = await createBusinessRecords(supabase, {
+    const res = await createBusinessRecords({
       name,
       legal_name: legalName || undefined,
       contact_email: email || undefined,
+      manager_full_name: mgrName,
+      manager_email: mgrEmail,
+      manager_phone: mgrPhone || undefined,
+      manager_password: mgrPassword,
     });
     setBusy(false);
     if (res.ok) {
-      setFeedback({ type: "ok", text: "העסק נוצר בהצלחה." });
+      setFeedback({ type: "ok", text: "העסק והמנהל נוצרו בהצלחה." });
       setName("");
       setLegalName("");
       setEmail("");
+      setMgrName("");
+      setMgrEmail("");
+      setMgrPhone("");
+      setMgrPassword("");
       onCreated?.(res.tenantId);
     } else {
       setFeedback({ type: "err", text: res.error });
     }
   }
+
+  const canSubmit =
+    name.trim().length > 0 &&
+    mgrName.trim().length > 0 &&
+    mgrEmail.trim().length > 0 &&
+    mgrPassword.length >= 6;
 
   const fields = (
     <>
@@ -73,14 +90,65 @@ export function AddBusinessCard({
         />
       </View>
 
-      <View className="mb-4">
-        <Text className="mb-1 text-sm font-medium">אימייל (אופציונלי)</Text>
+      <View className="mb-3">
+        <Text className="mb-1 text-sm font-medium">
+          אימייל עסק (אופציונלי)
+        </Text>
         <TextInput
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-left"
           value={email}
           onChangeText={setEmail}
           placeholder="office@example.com"
           keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+
+      <Text className="mb-2 mt-2 text-sm font-semibold text-slate-800">
+        מנהל העסק
+      </Text>
+
+      <View className="mb-3">
+        <Text className="mb-1 text-sm font-medium">שם מלא</Text>
+        <TextInput
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-right"
+          value={mgrName}
+          onChangeText={setMgrName}
+          placeholder="שם המנהל"
+        />
+      </View>
+
+      <View className="mb-3">
+        <Text className="mb-1 text-sm font-medium">אימייל להתחברות</Text>
+        <TextInput
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-left"
+          value={mgrEmail}
+          onChangeText={setMgrEmail}
+          placeholder="manager@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+
+      <View className="mb-3">
+        <Text className="mb-1 text-sm font-medium">טלפון (אופציונלי)</Text>
+        <TextInput
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-left"
+          value={mgrPhone}
+          onChangeText={setMgrPhone}
+          placeholder="050-..."
+          keyboardType="phone-pad"
+        />
+      </View>
+
+      <View className="mb-4">
+        <Text className="mb-1 text-sm font-medium">סיסמה ראשונית (6+)</Text>
+        <TextInput
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-left"
+          value={mgrPassword}
+          onChangeText={setMgrPassword}
+          placeholder="סיסמה"
+          secureTextEntry
           autoCapitalize="none"
         />
       </View>
@@ -98,10 +166,10 @@ export function AddBusinessCard({
       <Pressable
         className="rounded-xl bg-blue-600 px-4 py-3.5 active:opacity-90 disabled:opacity-50"
         onPress={() => void onSubmit()}
-        disabled={busy}
+        disabled={busy || !canSubmit}
       >
         <Text className="text-center text-base font-semibold text-white">
-          {busy ? "יוצר…" : "צור עסק"}
+          {busy ? "יוצר…" : "צור עסק ומנהל"}
         </Text>
       </Pressable>
     </>

@@ -60,7 +60,7 @@ export default function ManagerQuoteRequestsListScreen() {
             title,
             status,
             created_at,
-            buildings ( name ),
+            buildings ( address ),
             units ( unit_number ),
             service_types ( name )
           `
@@ -104,7 +104,7 @@ export default function ManagerQuoteRequestsListScreen() {
       ) : (
         <View className="gap-2 pb-8">
           {rows.map((r) => {
-            const b = r.buildings as unknown as { name: string } | null;
+            const b = r.buildings as unknown as { address: string } | null;
             const u = r.units as unknown as { unit_number: string } | null;
             const st = r.service_types as unknown as { name: string } | null;
             return (
@@ -117,7 +117,7 @@ export default function ManagerQuoteRequestsListScreen() {
               >
                 <Text className="font-semibold">{r.title}</Text>
                 <Text className="text-sm text-gray-600">
-                  {b?.name ?? "בניין"} · דירה {u?.unit_number ?? "—"} ·{" "}
+                  {b?.address ?? "בניין"} · דירה {u?.unit_number ?? "—"} ·{" "}
                   {st?.name ?? "שירות"}
                 </Text>
                 <Text className="mt-1 text-xs text-gray-500">

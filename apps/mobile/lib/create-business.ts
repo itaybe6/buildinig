@@ -1,52 +1,81 @@
+import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
-
-type AppSupabase = typeof supabase;
 
 export type CreateBusinessInput = {
   name: string;
   legal_name?: string;
   contact_email?: string;
+  manager_full_name: string;
+  manager_email: string;
+  manager_phone?: string;
+  manager_password: string;
 };
 
+function webApiOrigin(): string | null {
+  const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_ORIGIN?.trim();
+  const fromExtra =
+    (
+      Constants.expoConfig?.extra as
+        | { EXPO_PUBLIC_WEB_APP_ORIGIN?: string }
+        | undefined
+    )?.EXPO_PUBLIC_WEB_APP_ORIGIN?.trim() ?? null;
+  const origin = fromEnv || fromExtra;
+  return origin ? origin.replace(/\/$/, "") : null;
+}
+
 /**
- * יוצר tenants + business_profiles (זהה ללוגיקת ה-web).
+ * יוצר עסק + מנהל דרך API של אפליקציית הווב (דורש SUPABASE_SERVICE_ROLE_KEY בשרת).
+ * דורש EXPO_PUBLIC_WEB_APP_ORIGIN — כתובת בסיס של שרת Next (כולל פורט בפיתוח).
  */
 export async function createBusinessRecords(
-  client: AppSupabase,
   input: CreateBusinessInput
 ): Promise<{ ok: true; tenantId: string } | { ok: false; error: string }> {
-  const name = input.name.trim();
-  const legalName = (input.legal_name ?? "").trim();
-  const contactEmail = (input.contact_email ?? "").trim();
-
-  if (!name) {
-    return { ok: false, error: "חובה להזין שם עסק." };
+  const origin = webApiOrigin();
+  if (!origin) {
+    return {
+      ok: false,
+      error:
+        "חסר EXPO_PUBLIC_WEB_APP_ORIGIN — הגדרו ב-app.config את כתובת שרת הווב (למשל http://192.168.x.x:3000).",
+    };
   }
 
-  const { data: tenant, error: te } = await client
-    .from("tenants")
-    .insert({
-      name,
-      contact_email: contactEmail || null,
-      is_active: true,
-    })
-    .select("id")
-    .single();
-
-  if (te || !tenant) {
-    const msg = te?.message ?? "שגיאה ביצירת הארגון";
-    return { ok: false, error: msg };
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    return { ok: false, error: "יש להתחבר כסופר־אדמין." };
   }
 
-  const { error: bpErr } = await client.from("business_profiles").insert({
-    tenant_id: tenant.id,
-    legal_name: legalName || null,
+  const res = await fetch(`${origin}/api/super-admin/create-business`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      name: input.name,
+      legal_name: input.legal_name ?? "",
+      contact_email: input.contact_email ?? "",
+      manager_full_name: input.manager_full_name,
+      manager_email: input.manager_email,
+      manager_phone: input.manager_phone ?? "",
+      manager_password: input.manager_password,
+    }),
   });
 
-  if (bpErr) {
-    await client.from("tenants").delete().eq("id", tenant.id);
-    return { ok: false, error: bpErr.message };
+  let json: { ok?: boolean; tenantId?: string; error?: string };
+  try {
+    json = (await res.json()) as typeof json;
+  } catch {
+    return { ok: false, error: "תשובה לא תקינה מהשרת." };
   }
 
-  return { ok: true, tenantId: tenant.id };
+  if (!res.ok || !json.ok || !json.tenantId) {
+    return {
+      ok: false,
+      error: json.error ?? `שגיאת שרת (${res.status})`,
+    };
+  }
+
+  return { ok: true, tenantId: json.tenantId };
 }

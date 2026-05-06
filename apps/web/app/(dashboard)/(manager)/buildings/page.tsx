@@ -16,9 +16,9 @@ export default async function BuildingsPage() {
   const supabase = createClient();
   const { data: buildings, error } = await supabase
     .from("buildings")
-    .select("id, name, address, city, floors_count, is_active, created_at")
+    .select("id, address, city, floors_count, is_active, created_at")
     .eq("business_profile_id", ctx.businessProfileId)
-    .order("name");
+    .order("address");
 
   return (
     <div className="space-y-6">
@@ -52,7 +52,6 @@ export default async function BuildingsPage() {
           <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b bg-muted/50">
               <tr>
-                <th className="px-3 py-2 text-start font-medium">שם</th>
                 <th className="px-3 py-2 text-start font-medium">כתובת</th>
                 <th className="px-3 py-2 text-start font-medium">עיר</th>
                 <th className="px-3 py-2 text-start font-medium">קומות</th>
@@ -67,10 +66,9 @@ export default async function BuildingsPage() {
                       href={`/buildings/${b.id}`}
                       className="font-medium text-primary underline-offset-4 hover:underline"
                     >
-                      {b.name}
+                      {b.address}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{b.address}</td>
                   <td className="px-3 py-2">{b.city}</td>
                   <td className="px-3 py-2 tabular-nums">{b.floors_count}</td>
                   <td className="px-3 py-2">

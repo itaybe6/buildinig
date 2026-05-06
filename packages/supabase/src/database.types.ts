@@ -145,7 +145,6 @@ export type Database = {
           id: string;
           tenant_id: string;
           business_profile_id: string | null;
-          name: string;
           address: string;
           city: string;
           floors_count: number;
@@ -158,7 +157,6 @@ export type Database = {
           id?: string;
           tenant_id: string;
           business_profile_id?: string | null;
-          name: string;
           address: string;
           city: string;
           floors_count?: number;
@@ -171,7 +169,6 @@ export type Database = {
           id?: string;
           tenant_id?: string;
           business_profile_id?: string | null;
-          name?: string;
           address?: string;
           city?: string;
           floors_count?: number;

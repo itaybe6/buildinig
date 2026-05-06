@@ -24,7 +24,7 @@ export default async function QuoteRequestsPage() {
       status,
       created_at,
       preferred_date,
-      buildings ( name ),
+      buildings ( address ),
       units ( unit_number ),
       service_types ( name )
     `
@@ -69,7 +69,7 @@ export default async function QuoteRequestsPage() {
             </thead>
             <tbody>
               {rows.map((row) => {
-                const b = row.buildings as unknown as { name: string } | null;
+                const b = row.buildings as unknown as { address: string } | null;
                 const u = row.units as unknown as { unit_number: string } | null;
                 const st = row.service_types as unknown as {
                   name: string;
@@ -84,7 +84,7 @@ export default async function QuoteRequestsPage() {
                         {row.title}
                       </Link>
                     </td>
-                    <td className="px-3 py-2">{b?.name ?? "—"}</td>
+                    <td className="px-3 py-2">{b?.address ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">{u?.unit_number ?? "—"}</td>
                     <td className="px-3 py-2">{st?.name ?? "—"}</td>
                     <td className="px-3 py-2">{QUOTE_STATUS_LABEL[row.status]}</td>

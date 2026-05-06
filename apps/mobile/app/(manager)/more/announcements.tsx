@@ -52,7 +52,7 @@ export default function ManagerAnnouncementsScreen() {
         const { data, error } = await supabase
           .from("announcements")
           .select(
-            "id, title, body, audience, is_pinned, created_at, buildings ( name, city )"
+            "id, title, body, audience, is_pinned, created_at, buildings ( address, city )"
           )
           .eq("business_profile_id", businessProfileId)
           .order("is_pinned", { ascending: false })
@@ -98,7 +98,7 @@ export default function ManagerAnnouncementsScreen() {
         <View className="gap-4 pb-8">
           {rows.map((r) => {
             const b = r.buildings as unknown as {
-              name: string;
+              address: string;
               city: string | null;
             } | null;
             return (
@@ -117,7 +117,7 @@ export default function ManagerAnnouncementsScreen() {
                     r.audience as keyof typeof ANNOUNCEMENT_AUDIENCE_LABEL
                   ] ?? r.audience}
                   {b
-                    ? ` · ${b.name}${b.city ? `, ${b.city}` : ""}`
+                    ? ` · ${b.address}${b.city ? `, ${b.city}` : ""}`
                     : ""}
                 </Text>
                 {r.body ? (

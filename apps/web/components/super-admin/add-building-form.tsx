@@ -7,9 +7,21 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function SuperAdminAddBuildingForm({ tenantId }: { tenantId: string }) {
+export function SuperAdminAddBuildingForm({
+  tenantId,
+  collapsible = false,
+  defaultExpanded = false,
+}: {
+  tenantId: string;
+  /** כשאמת — הטופס מוסתר עד לחיצה על «הוספת בניין» */
+  collapsible?: boolean;
+  /** למשל אחרי יצירת עסק חדש — פותח את הטופס מיד */
+  defaultExpanded?: boolean;
+}) {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [open, setOpen] = useState(() =>
+    collapsible ? defaultExpanded : true
+  );
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [floors, setFloors] = useState("1");
@@ -24,7 +36,6 @@ export function SuperAdminAddBuildingForm({ tenantId }: { tenantId: string }) {
     const supabase = createClient();
     const row = {
       tenant_id: tenantId,
-      name: name.trim(),
       address: address.trim(),
       city: city.trim(),
       floors_count: floorsCount,
@@ -35,28 +46,22 @@ export function SuperAdminAddBuildingForm({ tenantId }: { tenantId: string }) {
       setError(insertError.message);
       return;
     }
-    setName("");
     setAddress("");
     setCity("");
     setFloors("1");
     router.refresh();
+    if (collapsible) setOpen(false);
   }
 
-  return (
+  const form = (
     <form
       onSubmit={onSubmit}
       className="grid max-w-xl gap-4 rounded-lg border bg-card p-4"
     >
       <p className="font-medium">הוספת בניין ללקוח</p>
-      <div className="grid gap-2">
-        <Label htmlFor="b-name">שם הבניין</Label>
-        <Input
-          id="b-name"
-          required
-          value={name}
-          onChange={(ev) => setName(ev.target.value)}
-        />
-      </div>
+      <p className="text-sm text-muted-foreground">
+        הזנת כתובת מלאה — אין שדה נפרד לשם בניין.
+      </p>
       <div className="grid gap-2">
         <Label htmlFor="b-address">כתובת</Label>
         <Input
@@ -85,9 +90,40 @@ export function SuperAdminAddBuildingForm({ tenantId }: { tenantId: string }) {
         />
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? "שומר…" : "הוסף בניין"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={pending}>
+          {pending ? "שומר…" : "הוסף בניין"}
+        </Button>
+        {collapsible ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+          >
+            ביטול
+          </Button>
+        ) : null}
+      </div>
     </form>
+  );
+
+  if (!collapsible) {
+    return form;
+  }
+
+  return (
+    <div className="space-y-3">
+      {open ? (
+        form
+      ) : (
+        <Button
+          type="button"
+          className="h-11 w-full sm:h-10 sm:w-auto"
+          onClick={() => setOpen(true)}
+        >
+          הוספת בניין
+        </Button>
+      )}
+    </div>
   );
 }

@@ -66,10 +66,10 @@ export default async function BuildingDetailPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{building.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {building.address}, {building.city}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {building.address}
+          </h1>
+          <p className="text-sm text-muted-foreground">{building.city}</p>
         </div>
         <Link
           href="/buildings"

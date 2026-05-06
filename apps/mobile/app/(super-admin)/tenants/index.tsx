@@ -164,7 +164,12 @@ export default function SuperAdminTenantsScreen() {
         </Text>
       }
       renderItem={({ item }) => (
-        <View className="mb-3 rounded-xl border border-gray-200 p-4">
+        <Pressable
+          className="mb-3 rounded-xl border border-gray-200 bg-white p-4 active:bg-gray-50"
+          onPress={() =>
+            router.push(`/(super-admin)/tenants/${item.tenant.id}`)
+          }
+        >
           <Text className="text-lg font-semibold">{item.tenant.name}</Text>
           {item.legalName ? (
             <Text className="mt-1 text-sm text-gray-600">
@@ -183,17 +188,10 @@ export default function SuperAdminTenantsScreen() {
               <Text className="text-green-700">פעיל</Text>
             )}
           </Text>
-          <Pressable
-            className="mt-3 rounded-lg bg-blue-600 px-3 py-2 active:opacity-90"
-            onPress={() =>
-              router.push(`/(super-admin)/tenants/${item.tenant.id}/buildings`)
-            }
-          >
-            <Text className="text-center font-semibold text-white">
-              בניינים
-            </Text>
-          </Pressable>
-        </View>
+          <Text className="mt-3 text-center text-sm font-semibold text-blue-600">
+            לחצו לפרטי עסק ובניינים
+          </Text>
+        </Pressable>
       )}
     />
   );

@@ -17,7 +17,6 @@ export default function ManagerBuildingsListScreen() {
   const [rows, setRows] = useState<
     {
       id: string;
-      name: string;
       address: string | null;
       city: string | null;
       floors_count: number | null;
@@ -52,9 +51,9 @@ export default function ManagerBuildingsListScreen() {
 
         const { data, error } = await supabase
           .from("buildings")
-          .select("id, name, address, city, floors_count, is_active")
+          .select("id, address, city, floors_count, is_active")
           .eq("business_profile_id", businessProfileId)
-          .order("name");
+          .order("address");
 
         if (error) {
           setErr(error.message);
@@ -102,9 +101,11 @@ export default function ManagerBuildingsListScreen() {
               }
               className="rounded-lg border border-slate-200 px-3 py-3 active:bg-slate-50"
             >
-              <Text className="font-semibold">{r.name}</Text>
+              <Text className="font-semibold">
+                {r.address?.trim() || "—"}
+              </Text>
               <Text className="text-sm text-gray-600">
-                {[r.address, r.city].filter(Boolean).join(", ") || "—"}
+                {r.city?.trim() || "—"}
               </Text>
               <Text className="mt-1 text-xs text-gray-400">
                 קומות: {r.floors_count ?? "—"} ·{" "}

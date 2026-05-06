@@ -13,7 +13,6 @@ export default function ManagerBuildingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [units, setUnits] = useState<
@@ -47,7 +46,7 @@ export default function ManagerBuildingDetailScreen() {
 
         const { data: building, error: bErr } = await supabase
           .from("buildings")
-          .select("name, address, city")
+          .select("address, city")
           .eq("id", String(id))
           .eq("business_profile_id", businessProfileId)
           .maybeSingle();
@@ -69,7 +68,6 @@ export default function ManagerBuildingDetailScreen() {
           .order("unit_number");
 
         if (!cancelled) {
-          setName(building.name);
           setAddress(building.address ?? "");
           setCity(building.city ?? "");
           setUnits(unitsData ?? []);
@@ -103,10 +101,10 @@ export default function ManagerBuildingDetailScreen() {
 
   return (
     <ScrollView className="flex-1 bg-white px-4 pt-4">
-      <Text className="mb-1 text-xl font-bold">{name}</Text>
-      <Text className="mb-6 text-sm text-gray-600">
-        {[address, city].filter(Boolean).join(", ") || "—"}
+      <Text className="mb-1 text-xl font-bold">
+        {address.trim() || "—"}
       </Text>
+      <Text className="mb-6 text-sm text-gray-600">{city.trim() || "—"}</Text>
       <Text className="mb-2 font-semibold text-slate-800">דירות</Text>
       {units.length === 0 ? (
         <Text className="text-gray-500">אין דירות רשומות.</Text>

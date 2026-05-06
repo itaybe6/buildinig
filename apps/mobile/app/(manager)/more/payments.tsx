@@ -78,13 +78,13 @@ export default function ManagerPaymentsScreen() {
         const residentIds = [...new Set(payments.map((p) => p.resident_id))];
 
         const [buildingsRes, unitsRes, profilesRes] = await Promise.all([
-          supabase.from("buildings").select("id, name").in("id", buildingIds),
+          supabase.from("buildings").select("id, address").in("id", buildingIds),
           supabase.from("units").select("id, unit_number").in("id", unitIds),
           supabase.from("profiles").select("id, full_name").in("id", residentIds),
         ]);
 
         const bMap = new Map(
-          (buildingsRes.data ?? []).map((b) => [b.id, b.name])
+          (buildingsRes.data ?? []).map((b) => [b.id, b.address as string])
         );
         const uMap = new Map(
           (unitsRes.data ?? []).map((u) => [u.id, u.unit_number])

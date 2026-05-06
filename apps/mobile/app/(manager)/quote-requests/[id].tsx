@@ -61,7 +61,7 @@ export default function ManagerQuoteRequestDetailScreen() {
             status,
             preferred_date,
             created_at,
-            buildings ( name, address, city ),
+            buildings ( address, city ),
             units ( unit_number ),
             service_types ( name, description )
           `
@@ -114,7 +114,6 @@ export default function ManagerQuoteRequestDetailScreen() {
   }
 
   const b = row.buildings as unknown as {
-    name: string;
     address: string | null;
     city: string | null;
   } | null;
@@ -132,10 +131,7 @@ export default function ManagerQuoteRequestDetailScreen() {
       </Text>
       {b ? (
         <Text className="mb-2 text-sm text-gray-700">
-          {b.name}
-          {b.address || b.city
-            ? ` · ${[b.address, b.city].filter(Boolean).join(", ")}`
-            : ""}
+          {[b.address, b.city].filter(Boolean).join(", ") || "—"}
         </Text>
       ) : null}
       {u ? (

@@ -24,7 +24,7 @@ export default async function ResidentsPage() {
       profiles ( full_name, phone ),
       units (
         unit_number,
-        buildings ( name, city )
+        buildings ( address, city )
       )
     `
     )
@@ -79,7 +79,7 @@ export default async function ResidentsPage() {
                 } | null;
                 const unit = row.units as unknown as {
                   unit_number: string;
-                  buildings: { name: string; city: string } | null;
+                  buildings: { address: string; city: string } | null;
                 } | null;
                 const building = unit?.buildings;
                 return (
@@ -91,7 +91,9 @@ export default async function ResidentsPage() {
                       {profile?.phone ?? "—"}
                     </td>
                     <td className="px-3 py-2">
-                      {building ? `${building.name}, ${building.city}` : "—"}
+                      {building
+                        ? `${building.address}, ${building.city}`
+                        : "—"}
                     </td>
                     <td className="px-3 py-2 tabular-nums">
                       {unit?.unit_number ?? "—"}

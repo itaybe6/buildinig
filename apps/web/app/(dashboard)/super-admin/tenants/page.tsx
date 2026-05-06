@@ -1,3 +1,4 @@
+import { SuperAdminTenantTableRow } from "@/components/super-admin/super-admin-tenant-table-row";
 import { Button } from "@/components/ui/button";
 import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -173,14 +174,9 @@ export default async function SuperAdminTenantsPage() {
                   ? (bp as { legal_name: string | null }).legal_name
                   : null;
                 return (
-                  <tr key={t.id} className="border-b last:border-0">
-                    <td className="px-3 py-2">
-                      <Link
-                        href={`/super-admin/tenants/${t.id}/buildings`}
-                        className="font-medium text-primary underline-offset-4 hover:underline"
-                      >
-                        {t.name}
-                      </Link>
+                  <SuperAdminTenantTableRow key={t.id} tenantId={t.id}>
+                    <td className="px-3 py-2 font-medium text-primary">
+                      {t.name}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
                       {legal ?? "—"}
@@ -199,7 +195,7 @@ export default async function SuperAdminTenantsPage() {
                         ? new Date(t.created_at).toLocaleDateString("he-IL")
                         : "—"}
                     </td>
-                  </tr>
+                  </SuperAdminTenantTableRow>
                 );
               })}
             </tbody>

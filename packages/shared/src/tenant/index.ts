@@ -11,7 +11,7 @@
 //
 // For inserts:
 //   import { insertWithTenant } from "@my-project/shared";
-//   await insertWithTenant(supabase.from("buildings"), tenantId, { name: "..." });
+//   await insertWithTenant(supabase.from("buildings"), tenantId, { address: "...", city: "..." });
 //
 // The `tenants` table itself is filtered by `id` (it IS the tenants table),
 // so do not pass it through these helpers.

@@ -1,4 +1,4 @@
-import { AddBusinessForm } from "@/components/super-admin/add-business-form";
+import { Button } from "@/components/ui/button";
 import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -52,14 +52,17 @@ export default async function SuperAdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">סקירת עסק</h1>
-        <p className="text-sm text-muted-foreground">
-          תמונה ברמת הפלטפורמה — כל הלקוחות, המנהלים והנכסים.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="min-w-0 space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">סקירת עסק</h1>
+          <p className="text-sm text-muted-foreground">
+            תמונה ברמת הפלטפורמה — כל הלקוחות, המנהלים והנכסים.
+          </p>
+        </div>
+        <Button asChild className="h-11 w-full shrink-0 sm:h-10 sm:w-auto">
+          <Link href="/super-admin/tenants/new">הוספת לקוח חדש</Link>
+        </Button>
       </div>
-
-      <AddBusinessForm />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) =>

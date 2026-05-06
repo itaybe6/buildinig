@@ -30,7 +30,7 @@ export default async function ServiceRequestDetailPage({
     .select(
       `
       *,
-      buildings ( name, address, city ),
+      buildings ( address, city ),
       units ( unit_number ),
       reporter:profiles!service_requests_reported_by_fkey ( full_name, phone ),
       assignee:profiles!service_requests_assigned_to_fkey ( full_name, phone )
@@ -68,7 +68,6 @@ export default async function ServiceRequestDetailPage({
     .order("created_at", { ascending: true });
 
   const building = req.buildings as unknown as {
-    name: string;
     address: string;
     city: string;
   } | null;
@@ -109,7 +108,7 @@ export default async function ServiceRequestDetailPage({
           <CardContent className="space-y-1 text-sm">
             <p>
               <span className="text-muted-foreground">בניין: </span>
-              {building ? `${building.name}, ${building.address}, ${building.city}` : "—"}
+              {building ? `${building.address}, ${building.city}` : "—"}
             </p>
             <p>
               <span className="text-muted-foreground">דירה: </span>

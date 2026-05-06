@@ -26,7 +26,7 @@ export default async function QuoteRequestDetailPage({
     .select(
       `
       *,
-      buildings ( name, address, city ),
+      buildings ( address, city ),
       units ( unit_number ),
       requester:profiles!quote_requests_requested_by_fkey ( full_name, phone ),
       service_types ( name, description )
@@ -67,7 +67,6 @@ export default async function QuoteRequestDetailPage({
     .order("created_at", { ascending: false });
 
   const building = qr.buildings as unknown as {
-    name: string;
     address: string;
     city: string;
   } | null;
@@ -108,9 +107,7 @@ export default async function QuoteRequestDetailPage({
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <p>
-              {building
-                ? `${building.name}, ${building.address}, ${building.city}`
-                : "—"}
+              {building ? `${building.address}, ${building.city}` : "—"}
             </p>
             <p>דירה: {unit?.unit_number ?? "—"}</p>
             <p>

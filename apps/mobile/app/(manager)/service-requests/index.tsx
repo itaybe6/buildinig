@@ -55,7 +55,7 @@ export default function ManagerServiceRequestsListScreen() {
 
         const { data } = await supabase
           .from("service_requests")
-          .select("id, title, status, category, buildings ( name )")
+          .select("id, title, status, category, buildings ( address )")
           .eq("business_profile_id", businessProfileId)
           .order("created_at", { ascending: false })
           .limit(120);
@@ -96,7 +96,7 @@ export default function ManagerServiceRequestsListScreen() {
       ) : (
         <View className="gap-2 pb-8">
           {rows.map((r) => {
-            const b = r.buildings as unknown as { name: string } | null;
+            const b = r.buildings as unknown as { address: string } | null;
             return (
               <Pressable
                 key={r.id}
@@ -107,7 +107,7 @@ export default function ManagerServiceRequestsListScreen() {
               >
                 <Text className="font-semibold">{r.title}</Text>
                 <Text className="text-sm text-gray-600">
-                  {b?.name ?? "בניין"} ·{" "}
+                  {b?.address ?? "בניין"} ·{" "}
                   {REQUEST_CATEGORY_LABEL[
                     r.category as keyof typeof REQUEST_CATEGORY_LABEL
                   ] ?? r.category}{" "}

@@ -95,16 +95,16 @@ export default async function SuperAdminNewTenantPage() {
                 נוצרות רשומות ב־
                 <code className="rounded bg-background/80 px-1.5 py-0.5 font-mono text-[11px] text-foreground/85 ring-1 ring-border/50">
                   tenants
-                </code>{" "}
-                וב־
+                </code>
+                , ב־
                 <code className="rounded bg-background/80 px-1.5 py-0.5 font-mono text-[11px] text-foreground/85 ring-1 ring-border/50">
                   business_profiles
                 </code>
-                . לשיוך מנהל יש לעדכן את{" "}
+                , משתמש Auth למנהל ורשומת{" "}
                 <code className="rounded bg-background/80 px-1.5 py-0.5 font-mono text-[11px] text-foreground/85 ring-1 ring-border/50">
-                  profiles.tenant_id
+                  profiles
                 </code>{" "}
-                או להשתמש בזרימת ההזמנה שלכם.
+                (תפקיד מנהל, משויך לעסק).
               </p>
             </details>
           </div>

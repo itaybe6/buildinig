@@ -29,7 +29,7 @@ export default async function PaymentsPage() {
       due_date,
       paid_at,
       description,
-      buildings ( name ),
+      buildings ( address ),
       units ( unit_number ),
       resident:profiles!payments_resident_id_fkey ( full_name )
     `
@@ -75,7 +75,7 @@ export default async function PaymentsPage() {
             </thead>
             <tbody>
               {rows.map((row) => {
-                const b = row.buildings as unknown as { name: string } | null;
+                const b = row.buildings as unknown as { address: string } | null;
                 const u = row.units as unknown as { unit_number: string } | null;
                 const res = row.resident as unknown as {
                   full_name: string;
@@ -85,7 +85,7 @@ export default async function PaymentsPage() {
                     <td className="px-3 py-2 font-medium">
                       {res?.full_name ?? "—"}
                     </td>
-                    <td className="px-3 py-2">{b?.name ?? "—"}</td>
+                    <td className="px-3 py-2">{b?.address ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">
                       {u?.unit_number ?? "—"}
                     </td>

@@ -56,7 +56,7 @@ export default function SuperAdminNewTenantScreen() {
             embedded
             onCreated={(tenantId) =>
               router.replace(
-                `/(super-admin)/tenants/${tenantId}/buildings?new_tenant=1`
+                `/(super-admin)/tenants/${tenantId}?new_tenant=1`
               )
             }
           />

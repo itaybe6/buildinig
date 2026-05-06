@@ -29,7 +29,7 @@ export default async function ServiceRequestsBoardPage() {
       priority,
       category,
       created_at,
-      buildings ( name ),
+      buildings ( address ),
       units ( unit_number ),
       reporter:profiles!service_requests_reported_by_fkey ( full_name )
     `
@@ -78,7 +78,7 @@ export default async function ServiceRequestsBoardPage() {
             <tbody>
               {rows.map((row) => {
                 const building = row.buildings as unknown as {
-                  name: string;
+                  address: string;
                 } | null;
                 const unit = row.units as unknown as {
                   unit_number: string;
@@ -96,7 +96,7 @@ export default async function ServiceRequestsBoardPage() {
                         {row.title}
                       </Link>
                     </td>
-                    <td className="px-3 py-2">{building?.name ?? "—"}</td>
+                    <td className="px-3 py-2">{building?.address ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">
                       {unit?.unit_number ?? "—"}
                     </td>
