@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import { getWebConfig } from "@/lib/branding/server";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@my-project/shared";
 import { redirect } from "next/navigation";
@@ -35,8 +36,15 @@ export default async function DashboardGroupLayout({
     redirect("/unauthorized");
   }
 
+  const cfg = getWebConfig();
+  const contentDir = cfg.dir === "ltr" ? "ltr" : "rtl";
+
   return (
-    <DashboardShell role={role} displayName={profile.full_name}>
+    <DashboardShell
+      role={role}
+      displayName={profile.full_name}
+      contentDir={contentDir}
+    >
       {children}
     </DashboardShell>
   );

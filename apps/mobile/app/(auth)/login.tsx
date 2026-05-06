@@ -50,6 +50,10 @@ export default function LoginScreen() {
 
     const role = profile?.role;
 
+    if (role === "super_admin") {
+      router.replace("/(super-admin)/dashboard");
+      return;
+    }
     if (role === "employee") {
       router.replace("/(employee)/assignments");
       return;
@@ -61,7 +65,7 @@ export default function LoginScreen() {
 
     Alert.alert(
       "ממשק דפדפן",
-      "חשבון מנהל או מנהל-על — נא להשתמש באתר הניהול.",
+      "חשבון מנהל — נא להשתמש באתר הניהול.",
       [{ text: "אישור", onPress: () => supabase.auth.signOut() }]
     );
   }

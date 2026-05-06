@@ -1,8 +1,14 @@
+import { LogoutButton } from "@/components/LogoutButton";
 import { Tabs } from "expo-router";
 
 export default function EmployeeTabsLayout() {
   return (
-    <Tabs screenOptions={{ headerTitleAlign: "center" }}>
+    <Tabs
+      screenOptions={{
+        headerTitleAlign: "center",
+        headerRight: () => <LogoutButton />,
+      }}
+    >
       <Tabs.Screen
         name="assignments"
         options={{

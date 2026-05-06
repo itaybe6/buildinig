@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Placeholder aligned with your Postgres schema.
  * Replace via: pnpm --filter @my-project/supabase gen-types (set SUPABASE_PROJECT_REF + CLI login).
  */

@@ -1,7 +1,7 @@
 import { LogoutButton } from "@/components/LogoutButton";
 import { Stack } from "expo-router";
 
-export default function AssignmentsStackLayout() {
+export default function TenantsStackLayout() {
   return (
     <Stack
       screenOptions={{
@@ -9,8 +9,8 @@ export default function AssignmentsStackLayout() {
         headerRight: () => <LogoutButton />,
       }}
     >
-      <Stack.Screen name="index" options={{ title: "המשימות שלי" }} />
-      <Stack.Screen name="[id]" options={{ title: "פרטי משימה" }} />
+      <Stack.Screen name="index" options={{ title: "לקוחות (מנהלים)" }} />
+      <Stack.Screen name="[id]/buildings" options={{ title: "בניינים" }} />
     </Stack>
   );
 }

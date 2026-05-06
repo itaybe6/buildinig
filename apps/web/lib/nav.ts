@@ -20,9 +20,10 @@ export const MANAGER_NAV: NavItem[] = [
   { href: "/settings/tenant", label: "הגדרות ארגון" },
 ];
 
+/** תפריט ייעודי למנהל-על — ללא עמודי ממשק המנהל */
 export const SUPER_ADMIN_NAV: NavItem[] = [
-  { href: "/super-admin/dashboard", label: "ניהול מערכת" },
-  { href: "/super-admin/tenants", label: "חברות ניהול" },
+  { href: "/super-admin/dashboard", label: "סקירת עסק" },
+  { href: "/super-admin/tenants", label: "לקוחות (מנהלים)" },
 ];
 
 export const EMPLOYEE_WEB_NAV: NavItem[] = [
@@ -36,10 +37,7 @@ export function getSidebarSections(role: UserRole): {
   admin?: NavItem[];
 } {
   if (role === "super_admin") {
-    return {
-      primary: MANAGER_NAV,
-      admin: SUPER_ADMIN_NAV,
-    };
+    return { primary: SUPER_ADMIN_NAV };
   }
   if (role === "manager") {
     return { primary: MANAGER_NAV };
