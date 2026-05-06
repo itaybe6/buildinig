@@ -11,22 +11,11 @@ export default async function ManagerDashboardPage() {
   const supabase = createClient();
   const { businessProfileId } = ctx;
 
-  const [
-    buildings,
-    residents,
-    openReqs,
-    pendingPay,
-    quotePending,
-  ] = await Promise.all([
+  const [buildings, openReqs, pendingPay, quotePending] = await Promise.all([
     supabase
       .from("buildings")
       .select("id", { count: "exact", head: true })
       .eq("business_profile_id", businessProfileId),
-    supabase
-      .from("unit_residents")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", businessProfileId)
-      .eq("status", "active"),
     supabase
       .from("service_requests")
       .select("id", { count: "exact", head: true })
@@ -49,11 +38,6 @@ export default async function ManagerDashboardPage() {
       label: "בניינים",
       value: buildings.count ?? 0,
       href: "/buildings",
-    },
-    {
-      label: "דיירים פעילים",
-      value: residents.count ?? 0,
-      href: "/residents",
     },
     {
       label: "קריאות פתוחות / בטיפול",

@@ -42,22 +42,12 @@ export default function ManagerDashboardScreen() {
           return;
         }
 
-        const [
-          buildings,
-          residents,
-          openReqs,
-          pendingPay,
-          quotePending,
-        ] = await Promise.all([
+        const [buildings, openReqs, pendingPay, quotePending] =
+          await Promise.all([
           supabase
             .from("buildings")
             .select("id", { count: "exact", head: true })
             .eq("business_profile_id", businessProfileId),
-          supabase
-            .from("unit_residents")
-            .select("id", { count: "exact", head: true })
-            .eq("business_profile_id", businessProfileId)
-            .eq("status", "active"),
           supabase
             .from("service_requests")
             .select("id", { count: "exact", head: true })
@@ -81,11 +71,6 @@ export default function ManagerDashboardScreen() {
               label: "בניינים",
               value: buildings.count ?? 0,
               href: "/(manager)/buildings",
-            },
-            {
-              label: "דיירים פעילים",
-              value: residents.count ?? 0,
-              href: "/(manager)/more/residents",
             },
             {
               label: "קריאות פתוחות / בטיפול",

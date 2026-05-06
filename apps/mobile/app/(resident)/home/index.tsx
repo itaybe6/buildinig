@@ -55,37 +55,14 @@ export default function ResidentHomeScreen() {
           return;
         }
 
-        const { data: ur } = await supabase
-          .from("unit_residents")
-          .select("unit_id")
-          .eq("profile_id", profile.id)
-          .eq("status", "active");
-
-        const unitIds = (ur ?? []).map((r) => r.unit_id);
-        let buildingIds: string[] = [];
-        if (unitIds.length > 0) {
-          const { data: unitsData } = await supabase
-            .from("units")
-            .select("building_id")
-            .in("id", unitIds);
-          buildingIds = [
-            ...new Set((unitsData ?? []).map((u) => u.building_id)),
-          ];
-        }
-
-        if (buildingIds.length > 0) {
-          const { data: ann } = await supabase
-            .from("announcements")
-            .select("id, title")
-            .eq("business_profile_id", businessProfileId)
-            .eq("is_pinned", true)
-            .in("building_id", buildingIds)
-            .order("created_at", { ascending: false })
-            .limit(8);
-          if (!cancelled) setPinned(ann ?? []);
-        } else if (!cancelled) {
-          setPinned([]);
-        }
+        const { data: ann } = await supabase
+          .from("announcements")
+          .select("id, title")
+          .eq("business_profile_id", businessProfileId)
+          .eq("is_pinned", true)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        if (!cancelled) setPinned(ann ?? []);
 
         const { data: reqs } = await supabase
           .from("service_requests")

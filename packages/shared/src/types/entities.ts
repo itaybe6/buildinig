@@ -5,9 +5,7 @@ export type BusinessProfile =
   Database["public"]["Tables"]["business_profiles"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Building = Database["public"]["Tables"]["buildings"]["Row"];
-export type Floor = Database["public"]["Tables"]["floors"]["Row"];
 export type Unit = Database["public"]["Tables"]["units"]["Row"];
-export type UnitResident = Database["public"]["Tables"]["unit_residents"]["Row"];
 export type ServiceRequest = Database["public"]["Tables"]["service_requests"]["Row"];
 export type ServiceRequestComment =
   Database["public"]["Tables"]["service_request_comments"]["Row"];

@@ -10,7 +10,6 @@ export type NavItem = {
 export const MANAGER_NAV: NavItem[] = [
   { href: "/dashboard", label: "לוח בקרה" },
   { href: "/buildings", label: "בניינים" },
-  { href: "/residents", label: "דיירים" },
   { href: "/employees", label: "עובדים" },
   { href: "/service-requests", label: "קריאות שירות" },
   { href: "/service-types", label: "סוגי שירות" },

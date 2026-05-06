@@ -40,24 +40,9 @@ export default async function BuildingDetailPage({
 
   if (!building) notFound();
 
-  const { data: floors } = await supabase
-    .from("floors")
-    .select("id, floor_number, label")
-    .eq("building_id", params.id)
-    .eq("business_profile_id", ctx.businessProfileId)
-    .order("floor_number");
-
   const { data: units } = await supabase
     .from("units")
-    .select(
-      `
-      id,
-      unit_number,
-      monthly_fee,
-      type,
-      floors ( floor_number, label )
-    `
-    )
+    .select("id, unit_number, monthly_fee, type")
     .eq("building_id", params.id)
     .eq("business_profile_id", ctx.businessProfileId)
     .order("unit_number");
@@ -79,7 +64,7 @@ export default async function BuildingDetailPage({
         </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">קומות (שדה)</CardTitle>
@@ -87,16 +72,6 @@ export default async function BuildingDetailPage({
           <CardContent>
             <p className="text-2xl font-semibold tabular-nums">
               {building.floors_count}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">רשומות קומות</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">
-              {floors?.length ?? 0}
             </p>
           </CardContent>
         </Card>
@@ -137,30 +112,18 @@ export default async function BuildingDetailPage({
               <thead className="border-b bg-muted/50">
                 <tr>
                   <th className="px-3 py-2 text-start font-medium">מספר דירה</th>
-                  <th className="px-3 py-2 text-start font-medium">קומה</th>
                   <th className="px-3 py-2 text-start font-medium">סוג</th>
                   <th className="px-3 py-2 text-start font-medium">ועד חודשי</th>
                 </tr>
               </thead>
               <tbody>
-                {units.map((u) => {
-                  const fl = u.floors as unknown as {
-                    floor_number: number;
-                    label: string | null;
-                  } | null;
-                  return (
-                    <tr key={u.id} className="border-b last:border-0">
-                      <td className="px-3 py-2 font-medium">{u.unit_number}</td>
-                      <td className="px-3 py-2">
-                        {fl
-                          ? `${fl.floor_number}${fl.label ? ` (${fl.label})` : ""}`
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2">{u.type ?? "—"}</td>
-                      <td className="px-3 py-2 tabular-nums">{u.monthly_fee ?? "—"}</td>
-                    </tr>
-                  );
-                })}
+                {units.map((u) => (
+                  <tr key={u.id} className="border-b last:border-0">
+                    <td className="px-3 py-2 font-medium">{u.unit_number}</td>
+                    <td className="px-3 py-2">{u.type ?? "—"}</td>
+                    <td className="px-3 py-2 tabular-nums">{u.monthly_fee ?? "—"}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

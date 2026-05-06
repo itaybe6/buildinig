@@ -51,36 +51,10 @@ export default function ResidentAnnouncementsScreen() {
           return;
         }
 
-        const { data: ur } = await supabase
-          .from("unit_residents")
-          .select("unit_id")
-          .eq("profile_id", profile.id)
-          .eq("status", "active");
-
-        const unitIds = (ur ?? []).map((r) => r.unit_id);
-        if (unitIds.length === 0) {
-          if (!cancelled) setItems([]);
-          return;
-        }
-
-        const { data: unitsData } = await supabase
-          .from("units")
-          .select("building_id")
-          .in("id", unitIds);
-
-        const buildingIds = [
-          ...new Set((unitsData ?? []).map((u) => u.building_id)),
-        ];
-        if (buildingIds.length === 0) {
-          if (!cancelled) setItems([]);
-          return;
-        }
-
         const { data: ann } = await supabase
           .from("announcements")
           .select("id, title, body, created_at")
           .eq("business_profile_id", businessProfileId)
-          .in("building_id", buildingIds)
           .order("created_at", { ascending: false })
           .limit(50);
 

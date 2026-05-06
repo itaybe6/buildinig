@@ -179,40 +179,12 @@ export type Database = {
         };
         Relationships: [];
       };
-      floors: {
-        Row: {
-          id: string;
-          tenant_id: string;
-          business_profile_id: string | null;
-          building_id: string;
-          floor_number: number;
-          label: string | null;
-        };
-        Insert: {
-          id?: string;
-          tenant_id: string;
-          business_profile_id?: string | null;
-          building_id: string;
-          floor_number: number;
-          label?: string | null;
-        };
-        Update: {
-          id?: string;
-          tenant_id?: string;
-          business_profile_id?: string | null;
-          building_id?: string;
-          floor_number?: number;
-          label?: string | null;
-        };
-        Relationships: [];
-      };
       units: {
         Row: {
           id: string;
           tenant_id: string;
           business_profile_id: string | null;
           building_id: string;
-          floor_id: string;
           unit_number: string;
           type: string | null;
           size_sqm: number | null;
@@ -223,7 +195,6 @@ export type Database = {
           tenant_id: string;
           business_profile_id?: string | null;
           building_id: string;
-          floor_id: string;
           unit_number: string;
           type?: string | null;
           size_sqm?: number | null;
@@ -234,47 +205,10 @@ export type Database = {
           tenant_id?: string;
           business_profile_id?: string | null;
           building_id?: string;
-          floor_id?: string;
           unit_number?: string;
           type?: string | null;
           size_sqm?: number | null;
           monthly_fee?: string | null;
-        };
-        Relationships: [];
-      };
-      unit_residents: {
-        Row: {
-          id: string;
-          tenant_id: string;
-          business_profile_id: string | null;
-          unit_id: string;
-          profile_id: string;
-          status: Database["public"]["Enums"]["resident_status"] | null;
-          move_in_date: string | null;
-          move_out_date: string | null;
-          created_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          tenant_id: string;
-          business_profile_id?: string | null;
-          unit_id: string;
-          profile_id: string;
-          status?: Database["public"]["Enums"]["resident_status"] | null;
-          move_in_date?: string | null;
-          move_out_date?: string | null;
-          created_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          tenant_id?: string;
-          business_profile_id?: string | null;
-          unit_id?: string;
-          profile_id?: string;
-          status?: Database["public"]["Enums"]["resident_status"] | null;
-          move_in_date?: string | null;
-          move_out_date?: string | null;
-          created_at?: string | null;
         };
         Relationships: [];
       };
