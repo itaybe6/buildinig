@@ -25,7 +25,6 @@ export async function POST(req: Request) {
 
   let body: {
     full_name?: string;
-    email?: string;
     password?: string;
     phone?: string;
   };
@@ -41,9 +40,8 @@ export async function POST(req: Request) {
   const result = await createEmployeeForBusiness({
     businessProfileId: scope.businessProfileId,
     fullName: String(body.full_name ?? ""),
-    email: String(body.email ?? ""),
+    phoneRaw: String(body.phone ?? ""),
     password: String(body.password ?? ""),
-    phone: body.phone ? String(body.phone) : undefined,
   });
 
   if (!result.ok) {

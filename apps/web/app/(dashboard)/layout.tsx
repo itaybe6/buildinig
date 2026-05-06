@@ -1,7 +1,10 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getWebConfig } from "@/lib/branding/server";
-import { requireAuthProfile } from "@/lib/dashboard/session";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getManagerBrand,
+  requireAuthProfile,
+  type ManagerBrand,
+} from "@/lib/dashboard/session";
 import type { ReactNode } from "react";
 
 export default async function DashboardGroupLayout({
@@ -12,19 +15,10 @@ export default async function DashboardGroupLayout({
   const profile = await requireAuthProfile();
   const role = profile.role;
 
-  let managerBrand:
-    | { name: string; logoUrl: string | null }
-    | undefined;
+  let managerBrand: ManagerBrand | undefined;
   if (role === "manager" && profile.businessProfileId) {
-    const supabase = createClient();
-    const { data: bp } = await supabase
-      .from("business_profiles")
-      .select("name, logo_url")
-      .eq("id", profile.businessProfileId)
-      .maybeSingle();
-    if (bp) {
-      managerBrand = { name: bp.name, logoUrl: bp.logo_url };
-    }
+    const brand = await getManagerBrand(profile.businessProfileId);
+    if (brand) managerBrand = brand;
   }
 
   const cfg = getWebConfig();

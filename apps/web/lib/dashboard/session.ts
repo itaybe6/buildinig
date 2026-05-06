@@ -126,3 +126,23 @@ export async function requireSuperAdmin(): Promise<AuthProfile> {
   if (profile.role !== "super_admin") redirect("/dashboard");
   return profile;
 }
+
+export type ManagerBrand = { name: string; logoUrl: string | null };
+
+/**
+ * נתוני מיתוג של עסק עבור סרגל המנהל.
+ * לא משתמשים ב-unstable_cache כאן — createClient() קורא ל-cookies(), ו-NEXT.js
+ * אוסר גישה ל-dynamic data מתוך מימוש unstable_cache.
+ */
+export async function getManagerBrand(
+  businessProfileId: string
+): Promise<ManagerBrand | null> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("business_profiles")
+    .select("name, logo_url")
+    .eq("id", businessProfileId)
+    .maybeSingle();
+  if (!data) return null;
+  return { name: data.name, logoUrl: data.logo_url };
+}

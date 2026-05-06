@@ -28,7 +28,6 @@ export default function ManagerEmployeesScreen() {
   const [rows, setRows] = useState<Row[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [formErr, setFormErr] = useState<string | null>(null);
@@ -87,9 +86,8 @@ export default function ManagerEmployeesScreen() {
     try {
       const res = await createEmployeeViaWebApi({
         full_name: fullName.trim(),
-        email: email.trim(),
+        phone: phone.trim(),
         password,
-        phone: phone.trim() || undefined,
       });
       if (!res.ok) {
         setFormErr(res.error);
@@ -97,7 +95,6 @@ export default function ManagerEmployeesScreen() {
       }
       setAddOpen(false);
       setFullName("");
-      setEmail("");
       setPassword("");
       setPhone("");
       await load();
@@ -183,7 +180,7 @@ export default function ManagerEmployeesScreen() {
             >
               <Text className="mb-1 text-lg font-bold">עובד חדש</Text>
               <Text className="mb-4 text-sm text-gray-600">
-                אימייל וסיסמה לכניסה למערכת.
+                מספר טלפון נייד ישראלי וסיסמה — כמו מסך ההתחברות.
               </Text>
 
               <ScrollView
@@ -200,15 +197,14 @@ export default function ManagerEmployeesScreen() {
                   onChangeText={setFullName}
                 />
                 <Text className="mb-1 text-xs font-medium text-gray-700">
-                  אימייל
+                  טלפון נייד (כניסה למערכת)
                 </Text>
                 <TextInput
                   className="mb-3 min-h-[44px] rounded-lg border border-gray-300 px-3 py-2.5 text-left"
-                  placeholder="אימייל"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
+                  placeholder="למשל 050-1234567"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
                 />
                 <Text className="mb-1 text-xs font-medium text-gray-700">
                   סיסמה ראשונית (לפחות 6 תווים)
@@ -220,16 +216,6 @@ export default function ManagerEmployeesScreen() {
                   value={password}
                   onChangeText={setPassword}
                 />
-                <Text className="mb-1 text-xs font-medium text-gray-700">
-                  טלפון (אופציונלי)
-                </Text>
-                <TextInput
-                  className="mb-3 min-h-[44px] rounded-lg border border-gray-300 px-3 py-2.5 text-left"
-                  placeholder="טלפון"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={setPhone}
-                />
                 {formErr ? (
                   <Text className="mb-3 text-sm text-red-600">{formErr}</Text>
                 ) : null}
@@ -240,7 +226,7 @@ export default function ManagerEmployeesScreen() {
                 disabled={
                   saving ||
                   !fullName.trim() ||
-                  !email.trim() ||
+                  !phone.trim() ||
                   password.length < 6
                 }
                 onPress={() => void onCreateEmployee()}

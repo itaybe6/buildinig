@@ -23,9 +23,8 @@ export async function addEmployeeAction(
   const result = await createEmployeeForBusiness({
     businessProfileId: ctx.businessProfileId,
     fullName: String(formData.get("full_name") ?? ""),
-    email: String(formData.get("email") ?? ""),
+    phoneRaw: String(formData.get("phone") ?? ""),
     password: String(formData.get("password") ?? ""),
-    phone: String(formData.get("phone") ?? ""),
   });
 
   if (!result.ok) {

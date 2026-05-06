@@ -3,9 +3,8 @@ import { webApiOrigin } from "@/lib/web-api-origin";
 
 export async function createEmployeeViaWebApi(input: {
   full_name: string;
-  email: string;
+  phone: string;
   password: string;
-  phone?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const origin = webApiOrigin();
   if (!origin) {
@@ -31,9 +30,8 @@ export async function createEmployeeViaWebApi(input: {
     },
     body: JSON.stringify({
       full_name: input.full_name,
-      email: input.email,
+      phone: input.phone,
       password: input.password,
-      phone: input.phone ?? "",
     }),
   });
 

@@ -1,6 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/**
+ * Middleware קל — רק ניווטי דפים (HTML / RSC). מטרה יחידה: לרענן את ה-cookie
+ * של ה-session דרך `getUser()`. נתיבי API/Route Handlers מטפלים ב-auth שלהם
+ * דרך createClient על השרת, ולכן אנחנו לא צריכים לעבור עליהם פה.
+ */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -33,8 +38,11 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * ללא middleware על נכסי dev/build של Next — פחות קריאות getUser במצב פיתוח.
+     * דלג על:
+     * - api/* ו-trpc — מטופלים בשרת בנפרד, לא צריך getUser כפול
+     * - _next/static, _next/image, _next/data, _next/webpack-hmr — נכסי build/dev
+     * - favicon, robots, sitemap, וקבצי מדיה סטטיים
      */
-    "/((?!_next/static|_next/image|_next/webpack|_next/webpack-hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|trpc|_next/static|_next/image|_next/data|_next/webpack-hmr|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff|woff2|ttf)$).*)",
   ],
 };

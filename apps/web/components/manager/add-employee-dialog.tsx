@@ -68,8 +68,7 @@ export function AddEmployeeDialog() {
           className="grid flex-1 gap-4 overflow-y-auto overscroll-contain p-4"
         >
           <p className="text-sm text-muted-foreground">
-            נוצר חשבון התחברות (אימייל + סיסמה) ופרופיל עם תפקיד עובד שטח בארגון
-            שלך.
+            העובד יתחבר עם מספר הטלפון והסיסמה (כמו שאר המשתמשים במערכת).
           </p>
 
           <div className="grid gap-2">
@@ -84,14 +83,15 @@ export function AddEmployeeDialog() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="emp-email">אימייל (כניסה למערכת)</Label>
+            <Label htmlFor="emp-phone">טלפון נייד (כניסה למערכת)</Label>
             <Input
-              id="emp-email"
-              name="email"
-              type="email"
+              id="emp-phone"
+              name="phone"
+              type="tel"
               required
-              autoComplete="email"
+              autoComplete="tel"
               dir="ltr"
+              placeholder="למשל 050-1234567"
               className="min-h-[44px] text-start sm:min-h-10"
             />
           </div>
@@ -107,18 +107,6 @@ export function AddEmployeeDialog() {
               autoComplete="new-password"
               dir="ltr"
               placeholder="לפחות 6 תווים"
-              className="min-h-[44px] sm:min-h-10"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="emp-phone">טלפון (אופציונלי)</Label>
-            <Input
-              id="emp-phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              dir="ltr"
               className="min-h-[44px] sm:min-h-10"
             />
           </div>
