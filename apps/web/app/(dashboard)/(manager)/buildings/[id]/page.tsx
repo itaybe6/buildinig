@@ -17,14 +17,14 @@ export default async function BuildingDetailPage({
   params: { id: string };
 }) {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: building, error: bErr } = await supabase
     .from("buildings")
     .select("*")
     .eq("id", params.id)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .maybeSingle();
 
   if (bErr) {
@@ -44,7 +44,7 @@ export default async function BuildingDetailPage({
     .from("floors")
     .select("id, floor_number, label")
     .eq("building_id", params.id)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("floor_number");
 
   const { data: units } = await supabase
@@ -59,7 +59,7 @@ export default async function BuildingDetailPage({
     `
     )
     .eq("building_id", params.id)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("unit_number");
 
   return (

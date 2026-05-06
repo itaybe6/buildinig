@@ -11,7 +11,7 @@ import { RESIDENT_STATUS_LABEL } from "@my-project/shared";
 
 export default async function ResidentsPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: rows, error } = await supabase
@@ -28,7 +28,7 @@ export default async function ResidentsPage() {
       )
     `
     )
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("created_at", { ascending: false });
 
   return (

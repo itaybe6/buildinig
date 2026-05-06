@@ -12,7 +12,6 @@ import {
 type TenantRow = {
   id: string;
   name: string;
-  slug: string;
   contact_email: string | null;
   is_active: boolean | null;
   business_profiles: unknown;
@@ -48,7 +47,6 @@ export default function SuperAdminTenantsScreen() {
         `
         id,
         name,
-        slug,
         contact_email,
         is_active,
         business_profiles ( legal_name )
@@ -173,9 +171,6 @@ export default function SuperAdminTenantsScreen() {
               שם משפטי: {item.legalName}
             </Text>
           ) : null}
-          <Text className="mt-1 text-left text-xs text-gray-500 font-mono">
-            {item.tenant.slug}
-          </Text>
           <Text className="mt-1 text-sm text-gray-600">
             מנהלים:{" "}
             {item.managers.length ? item.managers.join(", ") : "—"}

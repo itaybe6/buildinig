@@ -11,7 +11,7 @@ import {
 type Props = {
   title?: string;
   subtitle?: string;
-  onCreated?: () => void;
+  onCreated?: (tenantId: string) => void;
   /** טופס ללא כותרת ומסגרת כרטיס — לעטיפת מסך ייעודי */
   embedded?: boolean;
 };
@@ -23,7 +23,6 @@ export function AddBusinessCard({
   embedded = false,
 }: Props) {
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [legalName, setLegalName] = useState("");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,7 +36,6 @@ export function AddBusinessCard({
     setBusy(true);
     const res = await createBusinessRecords(supabase, {
       name,
-      slug: slug || undefined,
       legal_name: legalName || undefined,
       contact_email: email || undefined,
     });
@@ -45,10 +43,9 @@ export function AddBusinessCard({
     if (res.ok) {
       setFeedback({ type: "ok", text: "העסק נוצר בהצלחה." });
       setName("");
-      setSlug("");
       setLegalName("");
       setEmail("");
-      onCreated?.();
+      onCreated?.(res.tenantId);
     } else {
       setFeedback({ type: "err", text: res.error });
     }
@@ -63,18 +60,6 @@ export function AddBusinessCard({
           value={name}
           onChangeText={setName}
           placeholder="שם תצוגה"
-        />
-      </View>
-
-      <View className="mb-3">
-        <Text className="mb-1 text-sm font-medium">slug (אנגלית, אופציונלי)</Text>
-        <TextInput
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-left font-mono text-sm"
-          value={slug}
-          onChangeText={setSlug}
-          placeholder="my-company"
-          autoCapitalize="none"
-          autoCorrect={false}
         />
       </View>
 

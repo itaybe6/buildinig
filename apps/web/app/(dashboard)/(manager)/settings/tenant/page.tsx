@@ -11,13 +11,13 @@ import {
 
 export default async function TenantSettingsPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: tenant, error } = await supabase
     .from("tenants")
     .select(
-      "id, name, slug, logo_url, primary_color, contact_email, contact_phone, plan, commission_rate, is_active, created_at"
+      "id, name, logo_url, primary_color, contact_email, contact_phone, plan, commission_rate, is_active, created_at"
     )
     .eq("id", ctx.tenantId)
     .maybeSingle();
@@ -49,7 +49,9 @@ export default async function TenantSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>{tenant.name}</CardTitle>
-            <CardDescription>slug: {tenant.slug}</CardDescription>
+            <CardDescription className="font-mono text-xs">
+              מזהה: {tenant.id}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
             <div>

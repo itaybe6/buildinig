@@ -3,7 +3,6 @@ import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -19,15 +18,17 @@ type BuildingRow = Pick<
 
 export default async function TenantBuildingsPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
   await requireSuperAdmin();
   const supabase = createClient();
 
   const { data: tenant, error: te } = await supabase
     .from("tenants")
-    .select("id, name, slug")
+    .select("id, name")
     .eq("id", params.id)
     .maybeSingle();
 
@@ -44,7 +45,10 @@ export default async function TenantBuildingsPage({
 
   if (!tenant) notFound();
 
-  const tenantInfo = tenant as { id: string; name: string; slug: string };
+  const tenantInfo = tenant as { id: string; name: string };
+
+  const showNewTenantHint =
+    searchParams.new_tenant === "1" || searchParams.new_tenant === "true";
 
   const { data: buildings, error } = await supabase
     .from("buildings")
@@ -60,7 +64,7 @@ export default async function TenantBuildingsPage({
             בניינים — {tenantInfo.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            מסונן לפי tenant_id (slug: {tenantInfo.slug})
+            מסונן לפי tenant_id — עסק: {tenantInfo.name}
           </p>
         </div>
         <Link
@@ -70,6 +74,20 @@ export default async function TenantBuildingsPage({
           חזרה ללקוחות
         </Link>
       </div>
+
+      {showNewTenantHint ? (
+        <Card className="border-primary/25 bg-primary/[0.06] shadow-none">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base text-foreground">
+              העסק נוצר בהצלחה
+            </CardTitle>
+            <CardDescription className="text-foreground/80">
+              כעת הוסיפו בניין אחד או יותר — כל בניין משויך אוטומטית ללקוח{" "}
+              <span className="font-medium">{tenantInfo.name}</span>.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
 
       <SuperAdminAddBuildingForm tenantId={params.id} />
 

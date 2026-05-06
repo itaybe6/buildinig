@@ -2,27 +2,8 @@ import { supabase } from "@/lib/supabase";
 
 type AppSupabase = typeof supabase;
 
-function slugify(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9\-]/g, "");
-}
-
-function uniqueOrgSlug(): string {
-  const id =
-    typeof globalThis !== "undefined" &&
-    globalThis.crypto &&
-    "randomUUID" in globalThis.crypto
-      ? globalThis.crypto.randomUUID().slice(0, 10)
-      : String(Date.now());
-  return `org-${id}`;
-}
-
 export type CreateBusinessInput = {
   name: string;
-  slug?: string;
   legal_name?: string;
   contact_email?: string;
 };
@@ -33,9 +14,8 @@ export type CreateBusinessInput = {
 export async function createBusinessRecords(
   client: AppSupabase,
   input: CreateBusinessInput
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; tenantId: string } | { ok: false; error: string }> {
   const name = input.name.trim();
-  let slug = (input.slug ?? "").trim();
   const legalName = (input.legal_name ?? "").trim();
   const contactEmail = (input.contact_email ?? "").trim();
 
@@ -43,21 +23,10 @@ export async function createBusinessRecords(
     return { ok: false, error: "חובה להזין שם עסק." };
   }
 
-  if (!slug) {
-    slug = slugify(name);
-  } else {
-    slug = slugify(slug);
-  }
-
-  if (!slug || slug.length < 2) {
-    slug = uniqueOrgSlug();
-  }
-
   const { data: tenant, error: te } = await client
     .from("tenants")
     .insert({
       name,
-      slug,
       contact_email: contactEmail || null,
       is_active: true,
     })
@@ -66,13 +35,6 @@ export async function createBusinessRecords(
 
   if (te || !tenant) {
     const msg = te?.message ?? "שגיאה ביצירת הארגון";
-    if (
-      msg.includes("duplicate") ||
-      msg.includes("unique") ||
-      te?.code === "23505"
-    ) {
-      return { ok: false, error: "מזהה slug כבר קיים — בחרו מזהה אחר." };
-    }
     return { ok: false, error: msg };
   }
 
@@ -86,5 +48,5 @@ export async function createBusinessRecords(
     return { ok: false, error: bpErr.message };
   }
 
-  return { ok: true };
+  return { ok: true, tenantId: tenant.id };
 }

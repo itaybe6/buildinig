@@ -11,6 +11,8 @@ export type AuthProfile = {
   fullName: string;
   role: UserRole;
   tenantId: string | null;
+  /** FK ל-business_profiles — סינון רשומות לפי עסק */
+  businessProfileId: string | null;
 };
 
 export async function getAuthProfile(): Promise<AuthProfile | null> {
@@ -22,11 +24,22 @@ export async function getAuthProfile(): Promise<AuthProfile | null> {
 
   const { data: row } = await supabase
     .from("profiles")
-    .select("id, full_name, role, tenant_id")
+    .select("id, full_name, role, tenant_id, business_profile_id")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
   if (!row) return null;
+
+  let businessProfileId = row.business_profile_id ?? null;
+
+  if (row.tenant_id && !businessProfileId) {
+    const { data: bp } = await supabase
+      .from("business_profiles")
+      .select("id")
+      .eq("tenant_id", row.tenant_id)
+      .maybeSingle();
+    businessProfileId = bp?.id ?? null;
+  }
 
   return {
     userId: user.id,
@@ -34,6 +47,7 @@ export async function getAuthProfile(): Promise<AuthProfile | null> {
     fullName: row.full_name,
     role: row.role as UserRole,
     tenantId: row.tenant_id,
+    businessProfileId,
   };
 }
 
@@ -51,8 +65,17 @@ export function resolveActiveTenantId(profile: AuthProfile): string | null {
 }
 
 export type ManagerTenantContext =
-  | { ok: true; profile: AuthProfile; tenantId: string }
-  | { ok: false; profile: AuthProfile; reason: "no_tenant" };
+  | {
+      ok: true;
+      profile: AuthProfile;
+      tenantId: string;
+      businessProfileId: string;
+    }
+  | {
+      ok: false;
+      profile: AuthProfile;
+      reason: "no_tenant" | "no_business_profile";
+    };
 
 export async function getManagerTenantContext(): Promise<ManagerTenantContext> {
   const profile = await requireAuthProfile();
@@ -60,7 +83,24 @@ export async function getManagerTenantContext(): Promise<ManagerTenantContext> {
 
   const tenantId = resolveActiveTenantId(profile);
   if (!tenantId) return { ok: false, profile, reason: "no_tenant" };
-  return { ok: true, profile, tenantId };
+
+  const supabase = createClient();
+  let businessProfileId = profile.businessProfileId;
+
+  if (!businessProfileId) {
+    const { data: bp } = await supabase
+      .from("business_profiles")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    businessProfileId = bp?.id ?? null;
+  }
+
+  if (!businessProfileId) {
+    return { ok: false, profile, reason: "no_business_profile" };
+  }
+
+  return { ok: true, profile, tenantId, businessProfileId };
 }
 
 export async function requireSuperAdmin(): Promise<AuthProfile> {

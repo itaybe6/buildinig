@@ -31,7 +31,6 @@ export default async function SuperAdminTenantsPage() {
       `
       id,
       name,
-      slug,
       contact_email,
       plan,
       is_active,
@@ -158,7 +157,6 @@ export default async function SuperAdminTenantsPage() {
                 <th className="px-3 py-2 text-start font-medium">שם</th>
                 <th className="px-3 py-2 text-start font-medium">שם משפטי</th>
                 <th className="px-3 py-2 text-start font-medium">מנהלים</th>
-                <th className="px-3 py-2 text-start font-medium">slug</th>
                 <th className="px-3 py-2 text-start font-medium">אימייל</th>
                 <th className="px-3 py-2 text-start font-medium">תוכנית</th>
                 <th className="px-3 py-2 text-start font-medium">עמלה</th>
@@ -190,7 +188,6 @@ export default async function SuperAdminTenantsPage() {
                     <td className="px-3 py-2 text-muted-foreground">
                       {mgrs.length ? mgrs.join(", ") : "—"}
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs">{t.slug}</td>
                     <td className="px-3 py-2">{t.contact_email ?? "—"}</td>
                     <td className="px-3 py-2">{t.plan ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">

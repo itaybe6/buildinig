@@ -5,7 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 export default function ManagerEmployeesScreen() {
@@ -33,16 +33,22 @@ export default function ManagerEmployeesScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון");
+          return;
+        }
+
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
         const { data, error } = await supabase
           .from("profiles")
           .select("id, full_name, phone, is_active")
-          .eq("tenant_id", tenantId)
+          .eq("business_profile_id", businessProfileId)
           .eq("role", "employee")
           .order("full_name");
 

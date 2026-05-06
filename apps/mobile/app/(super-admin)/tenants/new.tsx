@@ -42,19 +42,22 @@ export default function SuperAdminNewTenantScreen() {
             הוספת לקוח חדש
           </Text>
           <Text className="mt-3 text-center leading-6 text-[15px] text-slate-600">
-            נוצרת רשומת tenants ופרופיל עסק. לאחר מכן יש לשייך מנהל דרך{" "}
+            אחרי יצירת הלקוח תועברו לשלב הבא: הוספת בניינים. שיוך מנהל לעסק
+            (דרך{" "}
             <Text className="font-mono text-xs text-slate-700">
               profiles.tenant_id
             </Text>
-            .
+            ) אפשר לבצע בנפרד.
           </Text>
         </View>
 
         <View className="mt-8 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/10">
           <AddBusinessCard
             embedded
-            onCreated={() =>
-              router.replace("/(super-admin)/tenants")
+            onCreated={(tenantId) =>
+              router.replace(
+                `/(super-admin)/tenants/${tenantId}/buildings?new_tenant=1`
+              )
             }
           />
         </View>

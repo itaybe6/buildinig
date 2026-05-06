@@ -5,7 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 export default function ManagerTenantSettingsScreen() {
@@ -13,7 +13,6 @@ export default function ManagerTenantSettingsScreen() {
   const [err, setErr] = useState<string | null>(null);
   const [tenant, setTenant] = useState<{
     name: string;
-    slug: string;
     contact_email: string | null;
     contact_phone: string | null;
     plan: string | null;
@@ -35,16 +34,22 @@ export default function ManagerTenantSettingsScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון");
+          return;
+        }
+
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
         const { data, error } = await supabase
           .from("tenants")
           .select(
-            "name, slug, contact_email, contact_phone, plan, commission_rate, primary_color, is_active"
+            "name, contact_email, contact_phone, plan, commission_rate, primary_color, is_active"
           )
           .eq("id", tenantId)
           .maybeSingle();
@@ -92,7 +97,6 @@ export default function ManagerTenantSettingsScreen() {
   return (
     <ScrollView className="flex-1 bg-white px-4 pt-4">
       <Text className="mb-1 text-xl font-bold">{tenant.name}</Text>
-      <Text className="mb-6 text-sm text-gray-500">slug: {tenant.slug}</Text>
 
       <View className="gap-4 pb-8">
         <View>

@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 export default function ResidentHomeScreen() {
@@ -43,9 +43,15 @@ export default function ResidentHomeScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון (tenant)");
+          return;
+        }
+
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
@@ -71,7 +77,7 @@ export default function ResidentHomeScreen() {
           const { data: ann } = await supabase
             .from("announcements")
             .select("id, title")
-            .eq("tenant_id", tenantId)
+            .eq("business_profile_id", businessProfileId)
             .eq("is_pinned", true)
             .in("building_id", buildingIds)
             .order("created_at", { ascending: false })
@@ -84,7 +90,7 @@ export default function ResidentHomeScreen() {
         const { data: reqs } = await supabase
           .from("service_requests")
           .select("id, title, status")
-          .eq("tenant_id", tenantId)
+          .eq("business_profile_id", businessProfileId)
           .eq("reported_by", profile.id)
           .in("status", ["open", "assigned", "in_progress"])
           .order("created_at", { ascending: false })

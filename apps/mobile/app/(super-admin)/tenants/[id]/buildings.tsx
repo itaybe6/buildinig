@@ -20,7 +20,14 @@ type BuildingRow = {
 };
 
 export default function TenantBuildingsScreen() {
-  const { id: tenantId } = useLocalSearchParams<{ id: string }>();
+  const { id: tenantId, new_tenant: newTenant } = useLocalSearchParams<{
+    id: string;
+    new_tenant?: string;
+  }>();
+  const fromNewFlow =
+    newTenant === "1" ||
+    newTenant === "true" ||
+    (Array.isArray(newTenant) && newTenant[0] === "1");
   const router = useRouter();
 
   const [tenantName, setTenantName] = useState<string>("");
@@ -92,6 +99,15 @@ export default function TenantBuildingsScreen() {
       <Text className="mb-4 text-lg font-semibold text-gray-800">
         בניינים — {tenantName}
       </Text>
+
+      {fromNewFlow ? (
+        <View className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
+          <Text className="font-semibold text-blue-950">העסק נוצר בהצלחה</Text>
+          <Text className="mt-1 text-sm leading-relaxed text-blue-900/90">
+            הוסיפו בניין אחד או יותר — כל בניין משויך ללקוח שיצרתם.
+          </Text>
+        </View>
+      ) : null}
 
       <View className="mb-6 gap-2 rounded-xl border border-gray-200 p-4">
         <Text className="mb-2 font-medium">הוספת בניין</Text>

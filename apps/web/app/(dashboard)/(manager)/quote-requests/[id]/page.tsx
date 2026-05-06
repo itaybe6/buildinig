@@ -18,7 +18,7 @@ export default async function QuoteRequestDetailPage({
   params: { id: string };
 }) {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: qr, error } = await supabase
@@ -33,7 +33,7 @@ export default async function QuoteRequestDetailPage({
     `
     )
     .eq("id", params.id)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .maybeSingle();
 
   if (error) {
@@ -63,7 +63,7 @@ export default async function QuoteRequestDetailPage({
     `
     )
     .eq("request_id", params.id)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("created_at", { ascending: false });
 
   const building = qr.buildings as unknown as {

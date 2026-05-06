@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 type Tile = { label: string; value: number; href: string };
@@ -31,9 +31,14 @@ export default function ManagerDashboardScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון");
+          return;
+        }
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
@@ -47,26 +52,26 @@ export default function ManagerDashboardScreen() {
           supabase
             .from("buildings")
             .select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId),
+            .eq("business_profile_id", businessProfileId),
           supabase
             .from("unit_residents")
             .select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId)
+            .eq("business_profile_id", businessProfileId)
             .eq("status", "active"),
           supabase
             .from("service_requests")
             .select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId)
+            .eq("business_profile_id", businessProfileId)
             .in("status", ["open", "assigned", "in_progress"]),
           supabase
             .from("payments")
             .select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId)
+            .eq("business_profile_id", businessProfileId)
             .eq("status", "pending"),
           supabase
             .from("quote_requests")
             .select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId)
+            .eq("business_profile_id", businessProfileId)
             .eq("status", "pending"),
         ]);
 

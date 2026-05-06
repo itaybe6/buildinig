@@ -12,7 +12,7 @@ import Link from "next/link";
 
 export default async function QuoteRequestsPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: rows, error } = await supabase
@@ -29,7 +29,7 @@ export default async function QuoteRequestsPage() {
       service_types ( name )
     `
     )
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("created_at", { ascending: false });
 
   return (

@@ -10,13 +10,13 @@ import {
 
 export default async function EmployeesPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: rows, error } = await supabase
     .from("profiles")
     .select("id, full_name, phone, role, is_active, created_at")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .eq("role", "employee")
     .order("full_name");
 

@@ -6,10 +6,10 @@ import Link from "next/link";
 
 export default async function ManagerDashboardPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
-  const { tenantId } = ctx;
+  const { businessProfileId } = ctx;
 
   const [
     buildings,
@@ -21,26 +21,26 @@ export default async function ManagerDashboardPage() {
     supabase
       .from("buildings")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId),
+      .eq("business_profile_id", businessProfileId),
     supabase
       .from("unit_residents")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
+      .eq("business_profile_id", businessProfileId)
       .eq("status", "active"),
     supabase
       .from("service_requests")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
+      .eq("business_profile_id", businessProfileId)
       .in("status", ["open", "assigned", "in_progress"]),
     supabase
       .from("payments")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
+      .eq("business_profile_id", businessProfileId)
       .eq("status", "pending"),
     supabase
       .from("quote_requests")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
+      .eq("business_profile_id", businessProfileId)
       .eq("status", "pending"),
   ]);
 

@@ -11,7 +11,7 @@ import { REQUEST_CATEGORY_LABEL } from "@my-project/shared";
 
 export default async function ServiceTypesPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: rows, error } = await supabase
@@ -19,7 +19,7 @@ export default async function ServiceTypesPage() {
     .select(
       "id, name, description, category, price_min, price_max, price_unit, is_active, created_at"
     )
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("name");
 
   return (

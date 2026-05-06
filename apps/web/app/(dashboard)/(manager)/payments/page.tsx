@@ -14,7 +14,7 @@ import {
 
 export default async function PaymentsPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: rows, error } = await supabase
@@ -34,7 +34,7 @@ export default async function PaymentsPage() {
       resident:profiles!payments_resident_id_fkey ( full_name )
     `
     )
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("due_date", { ascending: false });
 
   return (

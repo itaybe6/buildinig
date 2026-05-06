@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 export default function ResidentQuotesListScreen() {
@@ -43,16 +43,22 @@ export default function ResidentQuotesListScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון");
+          return;
+        }
+
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
         const { data } = await supabase
           .from("quote_requests")
           .select("id, title, status, created_at")
-          .eq("tenant_id", tenantId)
+          .eq("business_profile_id", businessProfileId)
           .eq("requested_by", profile.id)
           .order("created_at", { ascending: false })
           .limit(80);

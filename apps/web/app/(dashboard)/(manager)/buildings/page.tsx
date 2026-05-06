@@ -11,13 +11,13 @@ import Link from "next/link";
 
 export default async function BuildingsPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: buildings, error } = await supabase
     .from("buildings")
     .select("id, name, address, city, floors_count, is_active, created_at")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("name");
 
   return (

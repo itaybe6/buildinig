@@ -12,7 +12,7 @@ import { ANNOUNCEMENT_AUDIENCE_LABEL } from "@my-project/shared";
 
 export default async function AnnouncementsPage() {
   const ctx = await getManagerTenantContext();
-  if (!ctx.ok) return <NoTenantNotice />;
+  if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
   const { data: rows, error } = await supabase
@@ -29,7 +29,7 @@ export default async function AnnouncementsPage() {
       buildings ( name, city )
     `
     )
-    .eq("tenant_id", ctx.tenantId)
+    .eq("business_profile_id", ctx.businessProfileId)
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 

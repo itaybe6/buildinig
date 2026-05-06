@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 export default function ManagerServiceTypesScreen() {
@@ -37,9 +37,15 @@ export default function ManagerServiceTypesScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון");
+          return;
+        }
+
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
@@ -48,7 +54,7 @@ export default function ManagerServiceTypesScreen() {
           .select(
             "id, name, description, category, price_min, price_max, is_active"
           )
-          .eq("tenant_id", tenantId)
+          .eq("business_profile_id", businessProfileId)
           .order("name");
 
         if (error) {

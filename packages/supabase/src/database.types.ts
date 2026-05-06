@@ -17,7 +17,6 @@ export type Database = {
         Row: {
           id: string;
           name: string;
-          slug: string;
           logo_url: string | null;
           primary_color: string | null;
           contact_email: string | null;
@@ -30,7 +29,6 @@ export type Database = {
         Insert: {
           id?: string;
           name: string;
-          slug: string;
           logo_url?: string | null;
           primary_color?: string | null;
           contact_email?: string | null;
@@ -43,7 +41,6 @@ export type Database = {
         Update: {
           id?: string;
           name?: string;
-          slug?: string;
           logo_url?: string | null;
           primary_color?: string | null;
           contact_email?: string | null;
@@ -98,6 +95,7 @@ export type Database = {
           id: string;
           auth_user_id: string | null;
           tenant_id: string | null;
+          business_profile_id: string | null;
           full_name: string;
           phone: string | null;
           avatar_url: string | null;
@@ -110,6 +108,7 @@ export type Database = {
           id?: string;
           auth_user_id?: string | null;
           tenant_id?: string | null;
+          business_profile_id?: string | null;
           full_name: string;
           phone?: string | null;
           avatar_url?: string | null;
@@ -122,6 +121,7 @@ export type Database = {
           id?: string;
           auth_user_id?: string | null;
           tenant_id?: string | null;
+          business_profile_id?: string | null;
           full_name?: string;
           phone?: string | null;
           avatar_url?: string | null;
@@ -144,6 +144,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           name: string;
           address: string;
           city: string;
@@ -156,6 +157,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           name: string;
           address: string;
           city: string;
@@ -168,6 +170,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           name?: string;
           address?: string;
           city?: string;
@@ -183,6 +186,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           building_id: string;
           floor_number: number;
           label: string | null;
@@ -190,6 +194,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           building_id: string;
           floor_number: number;
           label?: string | null;
@@ -197,6 +202,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           building_id?: string;
           floor_number?: number;
           label?: string | null;
@@ -207,6 +213,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           building_id: string;
           floor_id: string;
           unit_number: string;
@@ -217,6 +224,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           building_id: string;
           floor_id: string;
           unit_number: string;
@@ -227,6 +235,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           building_id?: string;
           floor_id?: string;
           unit_number?: string;
@@ -240,6 +249,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           unit_id: string;
           profile_id: string;
           status: Database["public"]["Enums"]["resident_status"] | null;
@@ -250,6 +260,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           unit_id: string;
           profile_id: string;
           status?: Database["public"]["Enums"]["resident_status"] | null;
@@ -260,6 +271,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           unit_id?: string;
           profile_id?: string;
           status?: Database["public"]["Enums"]["resident_status"] | null;
@@ -273,6 +285,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           building_id: string;
           unit_id: string | null;
           reported_by: string;
@@ -291,6 +304,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           building_id: string;
           unit_id?: string | null;
           reported_by: string;
@@ -309,6 +323,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           building_id?: string;
           unit_id?: string | null;
           reported_by?: string;
@@ -330,6 +345,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           request_id: string;
           author_id: string;
           body: string;
@@ -339,6 +355,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           request_id: string;
           author_id: string;
           body: string;
@@ -348,6 +365,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           request_id?: string;
           author_id?: string;
           body?: string;
@@ -360,6 +378,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           building_id: string;
           created_by: string;
           title: string;
@@ -373,6 +392,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           building_id: string;
           created_by: string;
           title: string;
@@ -386,6 +406,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           building_id?: string;
           created_by?: string;
           title?: string;
@@ -402,6 +423,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           building_id: string;
           unit_id: string;
           resident_id: string;
@@ -420,6 +442,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           building_id: string;
           unit_id: string;
           resident_id: string;
@@ -438,6 +461,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           building_id?: string;
           unit_id?: string;
           resident_id?: string;
@@ -459,6 +483,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           profile_id: string;
           type: string;
           title: string;
@@ -471,6 +496,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           profile_id: string;
           type: string;
           title: string;
@@ -483,6 +509,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           profile_id?: string;
           type?: string;
           title?: string;
@@ -498,6 +525,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           name: string;
           description: string | null;
           category: Database["public"]["Enums"]["request_category"];
@@ -510,6 +538,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           name: string;
           description?: string | null;
           category?: Database["public"]["Enums"]["request_category"];
@@ -522,6 +551,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           name?: string;
           description?: string | null;
           category?: Database["public"]["Enums"]["request_category"];
@@ -537,6 +567,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           building_id: string;
           unit_id: string;
           requested_by: string;
@@ -552,6 +583,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           building_id: string;
           unit_id: string;
           requested_by: string;
@@ -567,6 +599,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           building_id?: string;
           unit_id?: string;
           requested_by?: string;
@@ -585,6 +618,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           request_id: string;
           created_by: string;
           amount: string;
@@ -597,6 +631,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           request_id: string;
           created_by: string;
           amount: string;
@@ -609,6 +644,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           request_id?: string;
           created_by?: string;
           amount?: string;
@@ -624,6 +660,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          business_profile_id: string | null;
           quote_id: string;
           signed_by: string;
           signature_url: string | null;
@@ -633,6 +670,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          business_profile_id?: string | null;
           quote_id: string;
           signed_by: string;
           signature_url?: string | null;
@@ -642,6 +680,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          business_profile_id?: string | null;
           quote_id?: string;
           signed_by?: string;
           signature_url?: string | null;

@@ -5,7 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { resolveTenantIdForUser } from "@/lib/tenant-context";
+import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
 export default function ResidentAnnouncementsScreen() {
@@ -39,9 +39,15 @@ export default function ResidentAnnouncementsScreen() {
           return;
         }
 
-        const tenantId = await resolveTenantIdForUser(supabase, user.id);
+        const { tenantId, businessProfileId } =
+          await resolveTenantScopeForUser(supabase, user.id);
         if (!tenantId) {
           setErr("חסר מזהה ארגון");
+          return;
+        }
+
+        if (!businessProfileId) {
+          setErr("חסר פרופיל עסק — צור business_profiles לארגון");
           return;
         }
 
@@ -73,7 +79,7 @@ export default function ResidentAnnouncementsScreen() {
         const { data: ann } = await supabase
           .from("announcements")
           .select("id, title, body, created_at")
-          .eq("tenant_id", tenantId)
+          .eq("business_profile_id", businessProfileId)
           .in("building_id", buildingIds)
           .order("created_at", { ascending: false })
           .limit(50);
