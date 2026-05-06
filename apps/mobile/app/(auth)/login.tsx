@@ -62,10 +62,14 @@ export default function LoginScreen() {
       router.replace("/(resident)/home");
       return;
     }
+    if (role === "manager") {
+      router.replace("/(manager)/dashboard");
+      return;
+    }
 
     Alert.alert(
       "ממשק דפדפן",
-      "חשבון מנהל — נא להשתמש באתר הניהול.",
+      "חשבון זה אינו נתמך באפליקציה.",
       [{ text: "אישור", onPress: () => supabase.auth.signOut() }]
     );
   }
@@ -77,7 +81,7 @@ export default function LoginScreen() {
     >
       <Text className="mb-6 text-center text-2xl font-bold">התחברות</Text>
       <Text className="mb-6 text-center text-gray-600">
-        דיירים ועובדי שטח — כניסה עם האימייל והסיסמה
+        דיירים, עובדי שטח ומנהלי נכסים — כניסה עם האימייל והסיסמה
       </Text>
 
       <View className="mb-4">

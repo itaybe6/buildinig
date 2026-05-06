@@ -61,7 +61,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen font-sans antialiased">
+      <body
+        className={`${rubik.className} min-h-screen font-sans antialiased`}
+      >
         <Providers client={client} theme={theme}>
           {children}
         </Providers>

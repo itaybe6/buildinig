@@ -1,3 +1,4 @@
+import { AddBusinessForm } from "@/components/super-admin/add-business-form";
 import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -57,6 +58,9 @@ export default async function SuperAdminDashboardPage() {
           תמונה ברמת הפלטפורמה — כל הלקוחות, המנהלים והנכסים.
         </p>
       </div>
+
+      <AddBusinessForm />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) =>
           t.href ? (

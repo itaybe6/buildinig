@@ -55,6 +55,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      business_profiles: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          legal_name: string | null;
+          tax_id: string | null;
+          notes: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          legal_name?: string | null;
+          tax_id?: string | null;
+          notes?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          legal_name?: string | null;
+          tax_id?: string | null;
+          notes?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_profiles_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: true;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           id: string;

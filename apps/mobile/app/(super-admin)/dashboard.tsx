@@ -1,12 +1,13 @@
+import { AddBusinessCard } from "@/components/super-admin/AddBusinessCard";
 import { supabase } from "@/lib/supabase";
 import { Link } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 export const options = {
   title: "סקירת עסק",
   drawerLabel: "סקירת עסק",
 };
-import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function SuperAdminDashboardScreen() {
   const [counts, setCounts] = useState<{
@@ -77,15 +78,22 @@ export default function SuperAdminDashboardScreen() {
     { label: "מנהלים", value: counts.managers, hint: "משתמשי מנהל" },
     { label: "בניינים", value: counts.buildings, hint: "בכל הלקוחות" },
     { label: "קריאות שירות", value: counts.requests, hint: "במערכת" },
-    { label: "לקוחות פעילים", value: counts.activeTenants, hint: "חברות פעילות" },
+    {
+      label: "לקוחות פעילים",
+      value: counts.activeTenants,
+      hint: "חברות פעילות",
+    },
   ];
 
   return (
     <ScrollView className="flex-1 bg-white px-4 py-4">
       <Text className="mb-1 text-2xl font-bold">סקירת עסק</Text>
-      <Text className="mb-6 text-gray-600">
-        תמונה ברמת הפלטפורמה — כל הלקוחות והנכסים.
+      <Text className="mb-4 text-gray-600">
+        תמונה ברמת הפלטפורמה — כל הלקוחות והנכסים. ניתן ליצור עסק חדש
+        (tenants + business_profiles) ישירות מכאן.
       </Text>
+
+      <AddBusinessCard onCreated={() => void load()} />
 
       {error ? (
         <Text className="mb-4 text-red-600">{error}</Text>
@@ -106,7 +114,7 @@ export default function SuperAdminDashboardScreen() {
         ))}
       </View>
 
-      <Link href="/tenants" asChild>
+      <Link href="/(super-admin)/tenants" asChild>
         <Pressable className="rounded-lg bg-blue-600 px-4 py-3 active:opacity-90">
           <Text className="text-center font-semibold text-white">
             ניהול לקוחות ובניינים
