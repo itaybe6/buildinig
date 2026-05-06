@@ -1,4 +1,5 @@
 import type { Database } from "@my-project/supabase";
+import { tryGetBusinessId } from "@/lib/branding/getBusinessId";
 import {
   businessProfileIdFromJwtAppMetadata,
   inferBusinessProfileIdFromProfileLinks,
@@ -42,7 +43,7 @@ export async function resolveManagerBearerScope(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, business_profile_id, building_id, unit_id")
+    .select("id, role, business_profile_id, tenant_id, building_id, unit_id")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -51,12 +52,17 @@ export async function resolveManagerBearerScope(
   }
 
   const jwtBiz = businessProfileIdFromJwtAppMetadata(user.app_metadata);
-  let businessProfileId = profile.business_profile_id ?? jwtBiz ?? null;
+  let businessProfileId =
+    profile.business_profile_id ?? jwtBiz ?? profile.tenant_id ?? null;
   if (!businessProfileId) {
     businessProfileId = await inferBusinessProfileIdFromProfileLinks(
       supabase,
       profile
     );
+  }
+
+  if (!businessProfileId) {
+    businessProfileId = tryGetBusinessId();
   }
 
   if (!businessProfileId) {

@@ -1,9 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { normalizeIsraelPhoneLocalDigits } from "@my-project/shared";
+import { profilePhoneLookupVariants } from "@my-project/shared";
 import { createAdminClient, hasServiceRoleKey } from "@/lib/supabase/admin";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +14,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (!hasServiceRoleKey()) {
     return NextResponse.json(
       { error: "שרת לא מוגדר לאימות (חסר SUPABASE_SERVICE_ROLE_KEY)" },
@@ -33,13 +32,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const phoneKey =
-    typeof body.phone === "string"
-      ? normalizeIsraelPhoneLocalDigits(body.phone)
-      : null;
+  const phoneRaw = typeof body.phone === "string" ? body.phone.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
+  const phoneVariants = profilePhoneLookupVariants(phoneRaw);
 
-  if (!phoneKey || password.length < 6) {
+  if (phoneVariants.length === 0 || password.length < 6) {
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
       { status: 401, headers: corsHeaders }
@@ -48,24 +45,34 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
-  const { data: profile, error: profileError } = await admin
+  const { data: profileRows, error: profileError } = await admin
     .from("profiles")
-    .select("id, auth_user_id, password_hash")
-    .eq("phone", phoneKey)
-    .maybeSingle();
+    .select("id, auth_user_id, password_hash, is_active")
+    .in("phone", phoneVariants);
 
-  if (profileError || !profile?.password_hash || !profile.auth_user_id) {
+  if (profileError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[auth/login] profiles query", profileError);
+    }
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
       { status: 401, headers: corsHeaders }
     );
   }
 
-  const passwordOk = await bcrypt.compare(password, profile.password_hash);
-  if (!passwordOk) {
+  const profile = profileRows?.find((row) => row.auth_user_id) ?? null;
+
+  if (!profile?.auth_user_id) {
     return NextResponse.json(
       { error: "פרטי התחברות שגויים" },
       { status: 401, headers: corsHeaders }
+    );
+  }
+
+  if (profile.is_active === false) {
+    return NextResponse.json(
+      { error: "החשבון לא פעיל" },
+      { status: 403, headers: corsHeaders }
     );
   }
 
@@ -80,58 +87,105 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: linkData, error: linkError } =
-    await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
+  /**
+   * ב-Route Handler, `cookies().set` לפעמים נכשל בשקט או לא נסגר עם גוף ה-JSON.
+   * משכפלים את דפוס ה-middleware: מצטברים על NextResponse עם אפשרויות מלאות.
+   */
+  let lastAuthCookies: {
+    name: string;
+    value: string;
+    options: CookieOptions;
+  }[] = [];
 
-  const tokenHash = linkData?.properties?.hashed_token;
-  if (linkError || !tokenHash) {
-    console.error("[auth/login] generateLink", linkError);
-    return NextResponse.json(
-      { error: "שגיאת התחברות פנימית" },
-      { status: 500, headers: corsHeaders }
-    );
-  }
-
-  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            /* Route Handler — עדיין מנסים לשמור סשן */
-          }
+          lastAuthCookies = cookiesToSet;
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
         },
       },
     }
   );
 
-  const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
-    type: "email",
-    token_hash: tokenHash,
-  });
+  function jsonWithSessionCookies(
+    body: Record<string, unknown>,
+    status: number
+  ) {
+    const res = NextResponse.json(body, { status, headers: corsHeaders });
+    lastAuthCookies.forEach(({ name, value, options }) => {
+      res.cookies.set(name, value, options);
+    });
+    return res;
+  }
 
-  if (otpError || !otpData.session) {
-    console.error("[auth/login] verifyOtp", otpError);
-    return NextResponse.json(
-      { error: "שגיאת התחברות פנימית" },
-      { status: 500, headers: corsHeaders }
+  /** סיסמה ב-profiles (bcrypt) — למשתמשים מהמיגרציה / עדכון ידני */
+  if (profile.password_hash) {
+    const passwordOk = await bcrypt.compare(password, profile.password_hash);
+    if (!passwordOk) {
+      return NextResponse.json(
+        { error: "פרטי התחברות שגויים" },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const { data: linkData, error: linkError } =
+      await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+      });
+
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (linkError || !tokenHash) {
+      console.error("[auth/login] generateLink", linkError);
+      return NextResponse.json(
+        { error: "שגיאת התחברות פנימית" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      type: "email",
+      token_hash: tokenHash,
+    });
+
+    if (otpError || !otpData.session) {
+      console.error("[auth/login] verifyOtp", otpError);
+      return NextResponse.json(
+        { error: "שגיאת התחברות פנימית" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    return jsonWithSessionCookies(
+      { ok: true, session: otpData.session },
+      200
     );
   }
 
-  return NextResponse.json(
-    { ok: true, session: otpData.session },
-    { headers: corsHeaders }
-  );
+  /** אין password_hash בפרופיל — סיסמת Auth בלבד (הזמנות / יצירת משתמש מהאפליקציה) */
+  const { data: signData, error: signErr } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+  if (signErr || !signData.session) {
+    if (process.env.NODE_ENV === "development" && signErr) {
+      console.error("[auth/login] signInWithPassword", signErr.message);
+    }
+    return NextResponse.json(
+      { error: "פרטי התחברות שגויים" },
+      { status: 401, headers: corsHeaders }
+    );
+  }
+
+  return jsonWithSessionCookies({ ok: true, session: signData.session }, 200);
 }

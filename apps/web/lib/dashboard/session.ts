@@ -8,6 +8,7 @@ import {
   type UserRole,
 } from "@my-project/shared";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 export type AuthProfile = {
   userId: string;
@@ -19,36 +20,45 @@ export type AuthProfile = {
   businessProfileId: string | null;
 };
 
-export async function getAuthProfile(): Promise<AuthProfile | null> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+/** קריאה אחת לבקשת RSC — layout + עמודים חולקים את אותה תוצאה */
+export const getAuthProfile = cache(
+  async (): Promise<AuthProfile | null> => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const { data: row } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, business_profile_id, building_id, unit_id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
+    const { data: row } = await supabase
+      .from("profiles")
+      .select(
+        "id, full_name, role, business_profile_id, tenant_id, building_id, unit_id"
+      )
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
 
-  if (!row) return null;
+    if (!row) return null;
 
-  const jwtBiz = businessProfileIdFromJwtAppMetadata(user.app_metadata);
-  let businessProfileId = row.business_profile_id ?? jwtBiz ?? null;
-  if (!businessProfileId) {
-    businessProfileId = await inferBusinessProfileIdFromProfileLinks(supabase, row);
+    const jwtBiz = businessProfileIdFromJwtAppMetadata(user.app_metadata);
+    let businessProfileId =
+      row.business_profile_id ?? jwtBiz ?? row.tenant_id ?? null;
+    if (!businessProfileId) {
+      businessProfileId = await inferBusinessProfileIdFromProfileLinks(
+        supabase,
+        row
+      );
+    }
+
+    return {
+      userId: user.id,
+      profileId: row.id,
+      fullName: row.full_name,
+      role: row.role as UserRole,
+      tenantId: businessProfileId,
+      businessProfileId,
+    };
   }
-
-  return {
-    userId: user.id,
-    profileId: row.id,
-    fullName: row.full_name,
-    role: row.role as UserRole,
-    tenantId: businessProfileId,
-    businessProfileId,
-  };
-}
+);
 
 export async function requireAuthProfile(): Promise<AuthProfile> {
   const profile = await getAuthProfile();
@@ -56,11 +66,10 @@ export async function requireAuthProfile(): Promise<AuthProfile> {
   return profile;
 }
 
-/** ארגון פעיל: פרופיל / claim ב-JWT (app_metadata) או BUSINESS_ID למנהל-על בלי business_profile_id */
+/** ארגון פעיל: פרופיל / JWT (app_metadata) / קישור בניין–יחידה; אחר כך BUSINESS_ID כמו במובייל */
 export function resolveActiveTenantId(profile: AuthProfile): string | null {
   if (profile.businessProfileId) return profile.businessProfileId;
-  if (profile.role === "super_admin") return tryGetBusinessId();
-  return null;
+  return tryGetBusinessId();
 }
 
 export type ManagerTenantContext =

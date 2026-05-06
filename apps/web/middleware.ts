@@ -32,6 +32,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * ללא middleware על נכסי dev/build של Next — פחות קריאות getUser במצב פיתוח.
+     */
+    "/((?!_next/static|_next/image|_next/webpack|_next/webpack-hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

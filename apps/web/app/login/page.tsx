@@ -45,7 +45,18 @@ export default function LoginPage() {
       setError(payload.error ?? "התחברות נכשלה");
       return;
     }
-    await supabase.auth.getSession();
+    const session = (payload as { session?: { access_token?: string; refresh_token?: string } })
+      .session;
+    if (session?.access_token && session?.refresh_token) {
+      const { error: sessionErr } = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+      if (sessionErr) {
+        setError(sessionErr.message ?? "שגיאת שמירת סשן");
+        return;
+      }
+    }
     const {
       data: { user },
     } = await supabase.auth.getUser();

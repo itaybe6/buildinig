@@ -30,3 +30,15 @@ export function normalizeIsraelPhoneLocalDigits(input: string): string | null {
   if (national.length !== 9 || national[0] !== "5") return null;
   return `0${national}`;
 }
+
+/**
+ * ערכים אפשריים לשדה profiles.phone באותו מספר — לחיפוש התחברות כשהטבלה לא אחידה
+ * (למשל 0501234567 מול 501234567 מול 972501234567).
+ */
+export function profilePhoneLookupVariants(input: string): string[] {
+  const local = normalizeIsraelPhoneLocalDigits(input);
+  if (!local) return [];
+  const national9 = local.slice(1);
+  const intl12 = `972${national9}`;
+  return Array.from(new Set([local, national9, intl12, `+${intl12}`]));
+}

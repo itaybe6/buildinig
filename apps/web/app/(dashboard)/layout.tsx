@@ -1,8 +1,7 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getWebConfig } from "@/lib/branding/server";
+import { requireAuthProfile } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
-import type { UserRole } from "@my-project/shared";
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 export default async function DashboardGroupLayout({
@@ -10,40 +9,18 @@ export default async function DashboardGroupLayout({
 }: {
   children: ReactNode;
 }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("full_name, role, business_profile_id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (!profileRow) {
-    redirect("/login");
-  }
-
-  const profile = profileRow as {
-    full_name: string;
-    role: UserRole;
-    business_profile_id: string | null;
-  };
+  const profile = await requireAuthProfile();
   const role = profile.role;
 
   let managerBrand:
     | { name: string; logoUrl: string | null }
     | undefined;
-  if (role === "manager" && profile.business_profile_id) {
+  if (role === "manager" && profile.businessProfileId) {
+    const supabase = createClient();
     const { data: bp } = await supabase
       .from("business_profiles")
       .select("name, logo_url")
-      .eq("id", profile.business_profile_id)
+      .eq("id", profile.businessProfileId)
       .maybeSingle();
     if (bp) {
       managerBrand = { name: bp.name, logoUrl: bp.logo_url };
@@ -56,7 +33,7 @@ export default async function DashboardGroupLayout({
   return (
     <DashboardShell
       role={role}
-      displayName={profile.full_name}
+      displayName={profile.fullName}
       contentDir={contentDir}
       managerBrand={managerBrand}
     >
