@@ -33,7 +33,7 @@ export default function SuperAdminDashboardScreen() {
       requestsRes,
       activeTenantsRes,
     ] = await Promise.all([
-      supabase.from("tenants").select("id", { count: "exact", head: true }),
+      supabase.from("business_profiles").select("id", { count: "exact", head: true }),
       supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
@@ -43,7 +43,7 @@ export default function SuperAdminDashboardScreen() {
         .from("service_requests")
         .select("id", { count: "exact", head: true }),
       supabase
-        .from("tenants")
+        .from("business_profiles")
         .select("id", { count: "exact", head: true })
         .eq("is_active", true),
     ]);

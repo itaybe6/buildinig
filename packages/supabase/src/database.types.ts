@@ -13,7 +13,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      tenants: {
+      business_profiles: {
         Row: {
           id: string;
           name: string;
@@ -22,9 +22,13 @@ export type Database = {
           contact_email: string | null;
           contact_phone: string | null;
           plan: string | null;
-          commission_rate: string | null;
           is_active: boolean | null;
           created_at: string | null;
+          updated_at: string | null;
+          legal_name: string | null;
+          tax_id: string | null;
+          mobile_phone: string | null;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -34,9 +38,13 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           plan?: string | null;
-          commission_rate?: string | null;
           is_active?: boolean | null;
           created_at?: string | null;
+          updated_at?: string | null;
+          legal_name?: string | null;
+          tax_id?: string | null;
+          mobile_phone?: string | null;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -46,49 +54,15 @@ export type Database = {
           contact_email?: string | null;
           contact_phone?: string | null;
           plan?: string | null;
-          commission_rate?: string | null;
           is_active?: boolean | null;
           created_at?: string | null;
+          updated_at?: string | null;
+          legal_name?: string | null;
+          tax_id?: string | null;
+          mobile_phone?: string | null;
+          notes?: string | null;
         };
         Relationships: [];
-      };
-      business_profiles: {
-        Row: {
-          id: string;
-          tenant_id: string;
-          legal_name: string | null;
-          tax_id: string | null;
-          notes: string | null;
-          created_at: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          tenant_id: string;
-          legal_name?: string | null;
-          tax_id?: string | null;
-          notes?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          tenant_id?: string;
-          legal_name?: string | null;
-          tax_id?: string | null;
-          notes?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "business_profiles_tenant_id_fkey";
-            columns: ["tenant_id"];
-            isOneToOne: true;
-            referencedRelation: "tenants";
-            referencedColumns: ["id"];
-          },
-        ];
       };
       profiles: {
         Row: {
@@ -96,8 +70,11 @@ export type Database = {
           auth_user_id: string | null;
           tenant_id: string | null;
           business_profile_id: string | null;
+          building_id: string | null;
+          unit_id: string | null;
           full_name: string;
           phone: string | null;
+          mobile_phone: string | null;
           avatar_url: string | null;
           push_token: string | null;
           role: Database["public"]["Enums"]["user_role"];
@@ -109,8 +86,11 @@ export type Database = {
           auth_user_id?: string | null;
           tenant_id?: string | null;
           business_profile_id?: string | null;
+          building_id?: string | null;
+          unit_id?: string | null;
           full_name: string;
           phone?: string | null;
+          mobile_phone?: string | null;
           avatar_url?: string | null;
           push_token?: string | null;
           role?: Database["public"]["Enums"]["user_role"];
@@ -122,8 +102,11 @@ export type Database = {
           auth_user_id?: string | null;
           tenant_id?: string | null;
           business_profile_id?: string | null;
+          building_id?: string | null;
+          unit_id?: string | null;
           full_name?: string;
           phone?: string | null;
+          mobile_phone?: string | null;
           avatar_url?: string | null;
           push_token?: string | null;
           role?: Database["public"]["Enums"]["user_role"];
@@ -135,7 +118,21 @@ export type Database = {
             foreignKeyName: "profiles_tenant_id_fkey";
             columns: ["tenant_id"];
             isOneToOne: false;
-            referencedRelation: "tenants";
+            referencedRelation: "business_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_building_id_fkey";
+            columns: ["building_id"];
+            isOneToOne: false;
+            referencedRelation: "buildings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_unit_id_fkey";
+            columns: ["unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
             referencedColumns: ["id"];
           },
         ];
@@ -186,6 +183,7 @@ export type Database = {
           business_profile_id: string | null;
           building_id: string;
           unit_number: string;
+          floor_number: number | null;
           type: string | null;
           size_sqm: number | null;
           monthly_fee: string | null;
@@ -196,6 +194,7 @@ export type Database = {
           business_profile_id?: string | null;
           building_id: string;
           unit_number: string;
+          floor_number?: number | null;
           type?: string | null;
           size_sqm?: number | null;
           monthly_fee?: string | null;
@@ -206,6 +205,7 @@ export type Database = {
           business_profile_id?: string | null;
           building_id?: string;
           unit_number?: string;
+          floor_number?: number | null;
           type?: string | null;
           size_sqm?: number | null;
           monthly_fee?: string | null;

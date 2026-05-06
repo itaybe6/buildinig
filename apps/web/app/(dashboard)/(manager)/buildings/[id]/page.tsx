@@ -1,3 +1,4 @@
+import { AddBuildingResidentForm } from "@/components/manager/add-building-resident-form";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -40,12 +41,21 @@ export default async function BuildingDetailPage({
 
   if (!building) notFound();
 
+  const { data: linkedProfiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone, role, is_active, building_id")
+    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("building_id", params.id)
+    .order("full_name");
+
   const { data: units } = await supabase
     .from("units")
-    .select("id, unit_number, monthly_fee, type")
+    .select("id, unit_number, floor_number, monthly_fee, type")
     .eq("building_id", params.id)
     .eq("business_profile_id", ctx.businessProfileId)
     .order("unit_number");
+
+  const profiles = linkedProfiles ?? [];
 
   return (
     <div className="space-y-6">
@@ -77,7 +87,7 @@ export default async function BuildingDetailPage({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">דירות</CardTitle>
+            <CardTitle className="text-base">דירות רשומות</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold tabular-nums">
@@ -99,6 +109,50 @@ export default async function BuildingDetailPage({
       ) : null}
 
       <div>
+        <h2 className="mb-3 text-lg font-medium">
+          משתמשים משויכים לבניין
+        </h2>
+        {!profiles.length ? (
+          <Card>
+            <CardContent className="py-6 text-sm text-muted-foreground">
+              עדיין אין פרופילים עם{" "}
+              <code className="rounded bg-muted px-1 text-xs">building_id</code>{" "}
+              לבניין זה.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="border-b bg-muted/50">
+                <tr>
+                  <th className="px-3 py-2 text-start font-medium">שם</th>
+                  <th className="px-3 py-2 text-start font-medium">טלפון</th>
+                  <th className="px-3 py-2 text-start font-medium">תפקיד</th>
+                  <th className="px-3 py-2 text-start font-medium">פעיל</th>
+                </tr>
+              </thead>
+              <tbody>
+                {profiles.map((p) => (
+                  <tr key={p.id} className="border-b last:border-0">
+                    <td className="px-3 py-2 font-medium">{p.full_name}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {p.phone ?? "—"}
+                    </td>
+                    <td className="px-3 py-2">{p.role}</td>
+                    <td className="px-3 py-2">
+                      {p.is_active === false ? "לא" : "כן"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <AddBuildingResidentForm buildingId={params.id} />
+
+      <div>
         <h2 className="mb-3 text-lg font-medium">דירות</h2>
         {!units?.length ? (
           <Card>
@@ -112,6 +166,7 @@ export default async function BuildingDetailPage({
               <thead className="border-b bg-muted/50">
                 <tr>
                   <th className="px-3 py-2 text-start font-medium">מספר דירה</th>
+                  <th className="px-3 py-2 text-start font-medium">מספר קומה</th>
                   <th className="px-3 py-2 text-start font-medium">סוג</th>
                   <th className="px-3 py-2 text-start font-medium">ועד חודשי</th>
                 </tr>
@@ -120,6 +175,9 @@ export default async function BuildingDetailPage({
                 {units.map((u) => (
                   <tr key={u.id} className="border-b last:border-0">
                     <td className="px-3 py-2 font-medium">{u.unit_number}</td>
+                    <td className="px-3 py-2 tabular-nums">
+                      {u.floor_number ?? "—"}
+                    </td>
                     <td className="px-3 py-2">{u.type ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">{u.monthly_fee ?? "—"}</td>
                   </tr>

@@ -1,4 +1,5 @@
 import { SuperAdminAddBuildingForm } from "@/components/super-admin/add-building-form";
+import { EditTenantBusinessForm } from "@/components/super-admin/edit-tenant-business-form";
 import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -8,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
+import { groupUnitNumbersByBuildingId } from "@/lib/building-unit-helpers";
 import type { Database } from "@my-project/supabase";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -32,7 +34,7 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
   const supabase = createClient();
 
   const { data: tenant, error: te } = await supabase
-    .from("tenants")
+    .from("business_profiles")
     .select(
       `
       id,
@@ -41,9 +43,10 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
       contact_phone,
       plan,
       is_active,
-      commission_rate,
       created_at,
-      business_profiles ( id, legal_name, tax_id )
+      legal_name,
+      tax_id,
+      mobile_phone
     `
     )
     .eq("id", params.id)
@@ -62,27 +65,24 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
 
   if (!tenant) notFound();
 
-  const tenantRow = tenant as Database["public"]["Tables"]["tenants"]["Row"] & {
-    business_profiles: unknown;
-  };
-  const rawBp = tenantRow.business_profiles as unknown;
-  const bp = Array.isArray(rawBp) ? rawBp[0] : rawBp;
-  const legalName = bp
-    ? (bp as { legal_name: string | null }).legal_name
-    : null;
-  const taxId = bp ? (bp as { tax_id: string | null }).tax_id : null;
+  const tenantRow =
+    tenant as Database["public"]["Tables"]["business_profiles"]["Row"];
+  const legalName = tenantRow.legal_name;
+  const taxId = tenantRow.tax_id;
+  const businessMobile = tenantRow.mobile_phone;
 
   const [
     managersRes,
     buildingsListRes,
     buildingsCountRes,
     unitsCountRes,
+    unitsListRes,
     requestsCountRes,
     openRequestsRes,
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, phone, is_active")
+      .select("id, full_name, phone, mobile_phone, is_active")
       .eq("role", "manager")
       .eq("tenant_id", params.id)
       .order("full_name"),
@@ -100,6 +100,10 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", params.id),
     supabase
+      .from("units")
+      .select("building_id, unit_number")
+      .eq("tenant_id", params.id),
+    supabase
       .from("service_requests")
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", params.id),
@@ -114,6 +118,10 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
   const managersError = managersRes.error;
   const buildings = buildingsListRes.data;
   const buildingsError = buildingsListRes.error;
+
+  const unitsByBuildingId = groupUnitNumbersByBuildingId(
+    (unitsListRes.data ?? []) as { building_id: string; unit_number: string }[],
+  );
 
   const showNewTenantHint =
     searchParams.new_tenant === "1" || searchParams.new_tenant === "true";
@@ -163,7 +171,9 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">פרטי עסק</CardTitle>
-            <CardDescription>הגדרות לקוח ב־ tenants והפרופיל העסקי</CardDescription>
+            <CardDescription>
+              נתונים מטבלת business_profiles (עסק מאוחד)
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
@@ -173,6 +183,12 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
             <p>
               <span className="text-muted-foreground">טלפון: </span>
               {tenantRow.contact_phone ?? "—"}
+            </p>
+            <p>
+              <span className="text-muted-foreground">
+                פלאפון (פרופיל עסק):{" "}
+              </span>
+              {businessMobile ?? "—"}
             </p>
             <p>
               <span className="text-muted-foreground">שם משפטי: </span>
@@ -187,12 +203,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
               {tenantRow.plan ?? "—"}
             </p>
             <p>
-              <span className="text-muted-foreground">עמלה: </span>
-              <span className="tabular-nums">
-                {tenantRow.commission_rate ?? "—"}
-              </span>
-            </p>
-            <p>
               <span className="text-muted-foreground">פעיל: </span>
               {tenantRow.is_active ? "כן" : "לא"}
             </p>
@@ -202,6 +212,18 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
                 ? new Date(tenantRow.created_at).toLocaleDateString("he-IL")
                 : "—"}
             </p>
+            <EditTenantBusinessForm
+              tenantId={params.id}
+              defaults={{
+                contact_email: tenantRow.contact_email,
+                contact_phone: tenantRow.contact_phone,
+                legal_name: legalName,
+                tax_id: taxId,
+                business_mobile_phone: businessMobile,
+                plan: tenantRow.plan,
+                is_active: tenantRow.is_active,
+              }}
+            />
           </CardContent>
         </Card>
 
@@ -224,6 +246,12 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
                       <span className="text-muted-foreground">
                         {" "}
                         — {m.phone}
+                      </span>
+                    ) : null}
+                    {m.mobile_phone ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · פלאפון {m.mobile_phone}
                       </span>
                     ) : null}
                     {m.is_active === false ? (
@@ -272,28 +300,66 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
           </CardHeader>
         </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="border-b bg-muted/50">
-              <tr>
-                <th className="px-3 py-2 text-start font-medium">כתובת</th>
-                <th className="px-3 py-2 text-start font-medium">עיר</th>
-                <th className="px-3 py-2 text-start font-medium">קומות</th>
-                <th className="px-3 py-2 text-start font-medium">סטטוס</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(buildings as BuildingRow[]).map((b) => (
-                <tr key={b.id} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium">{b.address}</td>
-                  <td className="px-3 py-2">{b.city}</td>
-                  <td className="px-3 py-2 tabular-nums">{b.floors_count}</td>
-                  <td className="px-3 py-2">{b.is_active ? "פעיל" : "לא פעיל"}</td>
+        <>
+          {unitsListRes.error ? (
+            <p className="mb-2 text-sm text-destructive">
+              לא ניתן לטעון דירות: {unitsListRes.error.message}
+            </p>
+          ) : null}
+          <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead className="border-b bg-muted/50">
+                <tr>
+                  <th className="px-3 py-2 text-start font-medium">כתובת</th>
+                  <th className="px-3 py-2 text-start font-medium">עיר</th>
+                  <th className="px-3 py-2 text-start font-medium">קומות</th>
+                  <th className="px-3 py-2 text-start font-medium">דירות</th>
+                  <th className="px-3 py-2 text-start font-medium">סטטוס</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {(buildings as BuildingRow[]).map((b) => {
+                  const unitNums = unitsByBuildingId.get(b.id) ?? [];
+                  const buildingHref = `/super-admin/tenants/${params.id}/buildings/${b.id}`;
+                  return (
+                    <tr key={b.id} className="border-b last:border-0">
+                      <td className="px-3 py-2 font-medium">
+                        <Link
+                          href={buildingHref}
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {b.address}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2">{b.city}</td>
+                      <td className="px-3 py-2 tabular-nums">{b.floors_count}</td>
+                      <td className="max-w-[min(100vw-2rem,320px)] px-3 py-2 align-top">
+                        {unitNums.length === 0 ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {unitNums.map((num) => (
+                              <Link
+                                key={`${b.id}-${num}`}
+                                href={buildingHref}
+                                className="inline-flex rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground underline-offset-2 hover:bg-muted/80 hover:underline"
+                              >
+                                {num}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {b.is_active ? "פעיל" : "לא פעיל"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

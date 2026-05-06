@@ -9,16 +9,16 @@ import {
   View,
 } from "react-native";
 
-type TenantRow = {
+type BusinessProfileListRow = {
   id: string;
   name: string;
   contact_email: string | null;
   is_active: boolean | null;
-  business_profiles: unknown;
+  legal_name: string | null;
 };
 
 type Row = {
-  tenant: TenantRow;
+  tenant: BusinessProfileListRow;
   managers: string[];
   legalName: string | null;
 };
@@ -42,16 +42,8 @@ export default function SuperAdminTenantsScreen() {
     setError(null);
 
     const { data: tenants, error: te } = await supabase
-      .from("tenants")
-      .select(
-        `
-        id,
-        name,
-        contact_email,
-        is_active,
-        business_profiles ( legal_name )
-      `
-      )
+      .from("business_profiles")
+      .select("id, name, contact_email, is_active, legal_name")
       .order("name");
 
     const { data: managers, error: me } = await supabase
@@ -82,20 +74,13 @@ export default function SuperAdminTenantsScreen() {
       map.set(m.tenant_id, list);
     }
 
-    function legalFromTenant(t: TenantRow): string | null {
-      const raw = t.business_profiles as unknown;
-      const bp = Array.isArray(raw) ? raw[0] : raw;
-      if (!bp || typeof bp !== "object") return null;
-      return (bp as { legal_name: string | null }).legal_name ?? null;
-    }
-
     setRows(
       (tenants ?? []).map((t) => {
-        const tr = t as TenantRow;
+        const tr = t as BusinessProfileListRow;
         return {
           tenant: tr,
           managers: map.get(t.id) ?? [],
-          legalName: legalFromTenant(tr),
+          legalName: tr.legal_name,
         };
       })
     );
@@ -109,8 +94,9 @@ export default function SuperAdminTenantsScreen() {
   const header = (
     <View className="pb-2">
       <Text className="mb-2 px-1 text-base text-gray-700">
-        כל עסק הוא tenants + פרופיל עסק (business_profiles). מנהל צריך{" "}
-        <Text className="font-mono text-xs">tenant_id</Text> בפרופיל.
+        כל עסק הוא רשומת{" "}
+        <Text className="font-mono text-xs">business_profiles</Text>. מנהל צריך{" "}
+        <Text className="font-mono text-xs">tenant_id</Text> לאותו מזהה.
       </Text>
 
       <View className="px-1">

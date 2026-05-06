@@ -1,8 +1,9 @@
 import type { Database } from "@my-project/supabase";
 
-export type Tenant = Database["public"]["Tables"]["tenants"]["Row"];
 export type BusinessProfile =
   Database["public"]["Tables"]["business_profiles"]["Row"];
+/** ארגון אצלנו = שורה ב־`business_profiles` (מזהה ב־`profiles.tenant_id`). */
+export type Tenant = BusinessProfile;
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Building = Database["public"]["Tables"]["buildings"]["Row"];
 export type Unit = Database["public"]["Tables"]["units"]["Row"];

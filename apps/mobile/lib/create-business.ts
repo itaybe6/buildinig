@@ -1,5 +1,5 @@
-import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
+import { webApiOrigin } from "@/lib/web-api-origin";
 
 export type CreateBusinessInput = {
   name: string;
@@ -10,18 +10,6 @@ export type CreateBusinessInput = {
   manager_phone?: string;
   manager_password: string;
 };
-
-function webApiOrigin(): string | null {
-  const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_ORIGIN?.trim();
-  const fromExtra =
-    (
-      Constants.expoConfig?.extra as
-        | { EXPO_PUBLIC_WEB_APP_ORIGIN?: string }
-        | undefined
-    )?.EXPO_PUBLIC_WEB_APP_ORIGIN?.trim() ?? null;
-  const origin = fromEnv || fromExtra;
-  return origin ? origin.replace(/\/$/, "") : null;
-}
 
 /**
  * יוצר עסק + מנהל דרך API של אפליקציית הווב (דורש SUPABASE_SERVICE_ROLE_KEY בשרת).

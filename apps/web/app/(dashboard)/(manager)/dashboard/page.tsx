@@ -1,7 +1,14 @@
 import { NoTenantNotice } from "@/components/no-tenant-notice";
+import { countUnitsByBuildingId } from "@/lib/building-unit-helpers";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@my-project/ui-web";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@my-project/ui-web";
 import Link from "next/link";
 
 export default async function ManagerDashboardPage() {
@@ -11,32 +18,51 @@ export default async function ManagerDashboardPage() {
   const supabase = createClient();
   const { businessProfileId } = ctx;
 
-  const [buildings, openReqs, pendingPay, quotePending] = await Promise.all([
-    supabase
-      .from("buildings")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", businessProfileId),
-    supabase
-      .from("service_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", businessProfileId)
-      .in("status", ["open", "assigned", "in_progress"]),
-    supabase
-      .from("payments")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", businessProfileId)
-      .eq("status", "pending"),
-    supabase
-      .from("quote_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", businessProfileId)
-      .eq("status", "pending"),
-  ]);
+  const buildingRows = await supabase
+    .from("buildings")
+    .select("id, address, city, floors_count, is_active")
+    .eq("business_profile_id", businessProfileId)
+    .order("address");
+
+  const buildingIds = buildingRows.data?.map((b) => b.id) ?? [];
+
+  const [buildingsCount, openReqs, pendingPay, quotePending, unitRowsRes] =
+    await Promise.all([
+      supabase
+        .from("buildings")
+        .select("id", { count: "exact", head: true })
+        .eq("business_profile_id", businessProfileId),
+      supabase
+        .from("service_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("business_profile_id", businessProfileId)
+        .in("status", ["open", "assigned", "in_progress"]),
+      supabase
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("business_profile_id", businessProfileId)
+        .eq("status", "pending"),
+      supabase
+        .from("quote_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("business_profile_id", businessProfileId)
+        .eq("status", "pending"),
+      buildingIds.length > 0
+        ? supabase
+            .from("units")
+            .select("building_id")
+            .in("building_id", buildingIds)
+        : Promise.resolve({ data: [] as { building_id: string }[], error: null }),
+    ]);
+
+  const unitRows =
+    unitRowsRes.error || !unitRowsRes.data ? [] : unitRowsRes.data;
+  const unitCountByBuilding = countUnitsByBuildingId(unitRows);
 
   const tiles = [
     {
       label: "בניינים",
-      value: buildings.count ?? 0,
+      value: buildingsCount.count ?? 0,
       href: "/buildings",
     },
     {
@@ -78,6 +104,46 @@ export default async function ManagerDashboardPage() {
           </Link>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">הבניינים שלך</CardTitle>
+          <CardDescription>
+            לחיצה על בניין פותחת פרטים ומשתמשים משויכים (
+            <code className="rounded bg-muted px-1 text-xs">
+              profiles.building_id
+            </code>
+            ).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!buildingRows.data?.length ? (
+            <p className="text-sm text-muted-foreground">
+              אין בניינים — נוספים על ידי סופר־אדמין או דרך הגדרות העסק.
+            </p>
+          ) : (
+            <div className="divide-y rounded-lg border">
+              {buildingRows.data.map((b) => (
+                <Link
+                  key={b.id}
+                  href={`/buildings/${b.id}`}
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm transition-colors hover:bg-accent/40"
+                >
+                  <span className="font-medium text-primary">{b.address}</span>
+                  <span className="text-muted-foreground">{b.city}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    קומות: {b.floors_count}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    דירות: {unitCountByBuilding.get(b.id) ?? 0}
+                  </span>
+                  <span>{b.is_active ? "פעיל" : "לא פעיל"}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

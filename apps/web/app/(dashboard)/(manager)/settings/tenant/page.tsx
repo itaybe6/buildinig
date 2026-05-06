@@ -15,9 +15,9 @@ export default async function TenantSettingsPage() {
 
   const supabase = createClient();
   const { data: tenant, error } = await supabase
-    .from("tenants")
+    .from("business_profiles")
     .select(
-      "id, name, logo_url, primary_color, contact_email, contact_phone, plan, commission_rate, is_active, created_at"
+      "id, name, logo_url, primary_color, contact_email, contact_phone, plan, is_active, created_at"
     )
     .eq("id", ctx.tenantId)
     .maybeSingle();
@@ -27,7 +27,7 @@ export default async function TenantSettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">הגדרות ארגון</h1>
         <p className="text-sm text-muted-foreground">
-          נתונים מטבלת tenants (קריאה בלבד בשלב זה).
+          נתונים מטבלת business_profiles (קריאה בלבד בשלב זה).
         </p>
       </div>
 
@@ -42,7 +42,9 @@ export default async function TenantSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>לא נמצא ארגון</CardTitle>
-            <CardDescription>בדקו שמזהה tenant תואם לרשומה ב-Supabase.</CardDescription>
+            <CardDescription>
+              בדקו שמזהה הארגון תואם ל־business_profiles ב-Supabase.
+            </CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -65,10 +67,6 @@ export default async function TenantSettingsPage() {
             <div>
               <p className="text-xs text-muted-foreground">תוכנית</p>
               <p>{tenant.plan ?? "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">עמלת מערכת</p>
-              <p>{tenant.commission_rate ?? "—"}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">צבע ראשי</p>

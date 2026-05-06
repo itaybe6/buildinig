@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { countUnitsByBuildingId } from "@/lib/building-unit-helpers";
 import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 
@@ -23,6 +24,9 @@ export default function ManagerBuildingsListScreen() {
       is_active: boolean | null;
     }[]
   >([]);
+  const [unitCountByBuilding, setUnitCountByBuilding] = useState<
+    Record<string, number>
+  >({});
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +63,27 @@ export default function ManagerBuildingsListScreen() {
           setErr(error.message);
           return;
         }
-        if (!cancelled) setRows(data ?? []);
+
+        const list = data ?? [];
+        const ids = list.map((b) => b.id);
+        let counts: Record<string, number> = {};
+        if (ids.length > 0) {
+          const { data: urows, error: ue } = await supabase
+            .from("units")
+            .select("building_id")
+            .in("building_id", ids);
+          if (ue) {
+            setErr(ue.message);
+            return;
+          }
+          const m = countUnitsByBuildingId(urows ?? []);
+          counts = Object.fromEntries(m);
+        }
+
+        if (!cancelled) {
+          setRows(list);
+          setUnitCountByBuilding(counts);
+        }
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : "שגיאה");
       } finally {
@@ -108,7 +132,8 @@ export default function ManagerBuildingsListScreen() {
                 {r.city?.trim() || "—"}
               </Text>
               <Text className="mt-1 text-xs text-gray-400">
-                קומות: {r.floors_count ?? "—"} ·{" "}
+                קומות: {r.floors_count ?? "—"} · דירות:{" "}
+                {unitCountByBuilding[r.id] ?? 0} ·{" "}
                 {r.is_active ? "פעיל" : "לא פעיל"}
               </Text>
             </Pressable>

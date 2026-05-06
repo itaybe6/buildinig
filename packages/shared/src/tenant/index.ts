@@ -13,8 +13,8 @@
 //   import { insertWithTenant } from "@my-project/shared";
 //   await insertWithTenant(supabase.from("buildings"), tenantId, { address: "...", city: "..." });
 //
-// The `tenants` table itself is filtered by `id` (it IS the tenants table),
-// so do not pass it through these helpers.
+// `business_profiles` rows use `id` as the tenant identifier — filter by `id`
+// when querying the current org row; do not pass that query through `withTenant`.
 
 export const TENANT_COLUMN = "tenant_id" as const;
 
@@ -53,8 +53,8 @@ export function insertWithTenant<T>(
 
 /**
  * Returns the column name to filter on for a given table.
- * `tenants` is special-cased — its primary key IS the tenant id.
+ * `business_profiles` is special-cased — its primary key IS the tenant id.
  */
 export function tenantFilterColumn(table: string): string {
-  return table === "tenants" ? "id" : TENANT_COLUMN;
+  return table === "business_profiles" ? "id" : TENANT_COLUMN;
 }

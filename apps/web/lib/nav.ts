@@ -16,6 +16,7 @@ export const MANAGER_NAV: NavItem[] = [
   { href: "/quote-requests", label: "בקשות הצעת מחיר" },
   { href: "/announcements", label: "לוח מודעות" },
   { href: "/payments", label: "תשלומים" },
+  { href: "/profile", label: "פרופיל" },
   { href: "/settings/tenant", label: "הגדרות ארגון" },
 ];
 

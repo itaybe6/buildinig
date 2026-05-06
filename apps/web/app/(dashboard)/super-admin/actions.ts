@@ -1,6 +1,7 @@
 "use server";
 
 import { bootstrapBusiness } from "@/lib/super-admin/bootstrap-business";
+import { updateTenantBusiness } from "@/lib/super-admin/update-tenant-business";
 import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -19,6 +20,48 @@ function safeSuperAdminRedirect(path: string): string | null {
 export type CreateBusinessState =
   | { ok: true }
   | { ok: false; error: string };
+
+export type UpdateTenantBusinessState =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function updateTenantBusinessAction(
+  _prev: UpdateTenantBusinessState | undefined,
+  formData: FormData
+): Promise<UpdateTenantBusinessState> {
+  await requireSuperAdmin();
+
+  const tenantId = String(formData.get("tenant_id") ?? "").trim();
+  if (!tenantId) {
+    return { ok: false, error: "חסר מזהה עסק." };
+  }
+
+  const activeRaw = String(formData.get("is_active") ?? "true").toLowerCase();
+  const is_active =
+    activeRaw === "true" || activeRaw === "1" || activeRaw === "on";
+
+  const result = await updateTenantBusiness({
+    tenantId,
+    contact_email:
+      String(formData.get("contact_email") ?? "").trim() || null,
+    contact_phone:
+      String(formData.get("contact_phone") ?? "").trim() || null,
+    plan: String(formData.get("plan") ?? "").trim() || null,
+    is_active,
+    legal_name: String(formData.get("legal_name") ?? "").trim() || null,
+    tax_id: String(formData.get("tax_id") ?? "").trim() || null,
+    business_mobile_phone:
+      String(formData.get("business_mobile_phone") ?? "").trim() || null,
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  revalidatePath(`/super-admin/tenants/${tenantId}`);
+  revalidatePath("/super-admin/tenants");
+  return { ok: true };
+}
 
 export async function createBusinessAction(
   _prev: CreateBusinessState | undefined,

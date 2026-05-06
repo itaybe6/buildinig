@@ -16,7 +16,6 @@ export default function ManagerTenantSettingsScreen() {
     contact_email: string | null;
     contact_phone: string | null;
     plan: string | null;
-    commission_rate: string | null;
     primary_color: string | null;
     is_active: boolean | null;
   } | null>(null);
@@ -47,9 +46,9 @@ export default function ManagerTenantSettingsScreen() {
         }
 
         const { data, error } = await supabase
-          .from("tenants")
+          .from("business_profiles")
           .select(
-            "name, contact_email, contact_phone, plan, commission_rate, primary_color, is_active"
+            "name, contact_email, contact_phone, plan, primary_color, is_active"
           )
           .eq("id", tenantId)
           .maybeSingle();
@@ -110,12 +109,6 @@ export default function ManagerTenantSettingsScreen() {
         <View>
           <Text className="text-xs text-gray-500">תוכנית</Text>
           <Text className="text-base">{tenant.plan ?? "—"}</Text>
-        </View>
-        <View>
-          <Text className="text-xs text-gray-500">עמלה</Text>
-          <Text className="text-base">
-            {tenant.commission_rate ?? "—"}
-          </Text>
         </View>
         <View>
           <Text className="text-xs text-gray-500">צבע ראשי</Text>

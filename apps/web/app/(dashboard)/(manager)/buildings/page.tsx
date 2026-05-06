@@ -1,4 +1,5 @@
 import { NoTenantNotice } from "@/components/no-tenant-notice";
+import { countUnitsByBuildingId } from "@/lib/building-unit-helpers";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -20,6 +21,17 @@ export default async function BuildingsPage() {
     .eq("business_profile_id", ctx.businessProfileId)
     .order("address");
 
+  const buildingIds = buildings?.map((b) => b.id) ?? [];
+  const { data: unitRows, error: unitsError } =
+    buildingIds.length > 0
+      ? await supabase
+          .from("units")
+          .select("building_id")
+          .in("building_id", buildingIds)
+      : { data: [] as { building_id: string }[], error: null };
+
+  const unitCountByBuilding = countUnitsByBuildingId(unitRows ?? []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -37,6 +49,13 @@ export default async function BuildingsPage() {
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
+      ) : unitsError ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>שגיאת טעינת דירות</CardTitle>
+            <CardDescription>{unitsError.message}</CardDescription>
+          </CardHeader>
+        </Card>
       ) : !buildings?.length ? (
         <Card>
           <CardHeader>
@@ -48,13 +67,14 @@ export default async function BuildingsPage() {
           </CardHeader>
         </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[640px] text-sm">
+        <div className="overflow-x-auto rounded-lg border [-webkit-overflow-scrolling:touch]">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="border-b bg-muted/50">
               <tr>
                 <th className="px-3 py-2 text-start font-medium">כתובת</th>
                 <th className="px-3 py-2 text-start font-medium">עיר</th>
                 <th className="px-3 py-2 text-start font-medium">קומות</th>
+                <th className="px-3 py-2 text-start font-medium">דירות</th>
                 <th className="px-3 py-2 text-start font-medium">סטטוס</th>
               </tr>
             </thead>
@@ -71,7 +91,10 @@ export default async function BuildingsPage() {
                   </td>
                   <td className="px-3 py-2">{b.city}</td>
                   <td className="px-3 py-2 tabular-nums">{b.floors_count}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 tabular-nums">
+                    {unitCountByBuilding.get(b.id) ?? 0}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
                     {b.is_active ? "פעיל" : "לא פעיל"}
                   </td>
                 </tr>

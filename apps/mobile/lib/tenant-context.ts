@@ -23,13 +23,9 @@ export async function resolveTenantScopeForUser(
     tenantId = tryGetBusinessId();
   }
 
+  // `profiles.tenant_id` is the business profile id (FK → `business_profiles.id`).
   if (tenantId && !businessProfileId) {
-    const { data: bp } = await client
-      .from("business_profiles")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
-    businessProfileId = bp?.id ?? null;
+    businessProfileId = tenantId;
   }
 
   return { tenantId, businessProfileId };

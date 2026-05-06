@@ -1,11 +1,16 @@
+import { groupUnitNumbersByBuildingId } from "@/lib/building-unit-helpers";
 import { supabase } from "@/lib/supabase";
+import { updateTenantBusinessViaWebApi } from "@/lib/update-tenant-business";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Pressable,
+  ScrollView,
+  Switch,
   Text,
   TextInput,
   View,
@@ -23,17 +28,18 @@ type TenantDetail = {
   contact_email: string | null;
   contact_phone: string | null;
   plan: string | null;
-  commission_rate: string | null;
   is_active: boolean | null;
   created_at: string | null;
   legal_name: string | null;
   tax_id: string | null;
+  mobile_phone: string | null;
 };
 
 type ManagerRow = {
   id: string;
   full_name: string;
   phone: string | null;
+  mobile_phone: string | null;
   is_active: boolean | null;
 };
 
@@ -57,12 +63,24 @@ export default function SuperAdminTenantDetailScreen() {
     requests: 0,
     openRequests: 0,
   });
+  const [unitsByBuilding, setUnitsByBuilding] = useState<
+    Record<string, string[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [floors, setFloors] = useState("1");
   const [saving, setSaving] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [draftEmail, setDraftEmail] = useState("");
+  const [draftPhone, setDraftPhone] = useState("");
+  const [draftLegal, setDraftLegal] = useState("");
+  const [draftTax, setDraftTax] = useState("");
+  const [draftBusinessMobile, setDraftBusinessMobile] = useState("");
+  const [draftPlan, setDraftPlan] = useState("");
+  const [draftActive, setDraftActive] = useState(true);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
@@ -71,17 +89,18 @@ export default function SuperAdminTenantDetailScreen() {
     const tid = Array.isArray(tenantId) ? tenantId[0] : tenantId;
 
     const { data: trow, error: te } = await supabase
-      .from("tenants")
+      .from("business_profiles")
       .select(
         `
         name,
         contact_email,
         contact_phone,
         plan,
-        commission_rate,
         is_active,
         created_at,
-        business_profiles ( legal_name, tax_id )
+        legal_name,
+        tax_id,
+        mobile_phone
       `
       )
       .eq("id", tid)
@@ -95,12 +114,12 @@ export default function SuperAdminTenantDetailScreen() {
 
     const { data: mgrs, error: me } = await supabase
       .from("profiles")
-      .select("id, full_name, phone, is_active")
+      .select("id, full_name, phone, mobile_phone, is_active")
       .eq("role", "manager")
       .eq("tenant_id", tid)
       .order("full_name");
 
-    const [bc, uc, rc, orc] = await Promise.all([
+    const [bc, uc, rc, orc, unitsList] = await Promise.all([
       supabase
         .from("buildings")
         .select("id", { count: "exact", head: true })
@@ -118,6 +137,10 @@ export default function SuperAdminTenantDetailScreen() {
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tid)
         .in("status", ["open", "assigned", "in_progress"]),
+      supabase
+        .from("units")
+        .select("building_id, unit_number")
+        .eq("tenant_id", tid),
     ]);
 
     setLoading(false);
@@ -136,31 +159,26 @@ export default function SuperAdminTenantDetailScreen() {
       Alert.alert("שגיאה", me.message);
       return;
     }
-
-    const rawBp = trow.business_profiles as unknown;
-    const bp = Array.isArray(rawBp) ? rawBp[0] : rawBp;
-    const legal =
-      bp && typeof bp === "object"
-        ? (bp as { legal_name: string | null }).legal_name
-        : null;
-    const tax =
-      bp && typeof bp === "object"
-        ? (bp as { tax_id: string | null }).tax_id
-        : null;
+    if (unitsList.error) {
+      Alert.alert("שגיאה", unitsList.error.message);
+      return;
+    }
 
     setTenant({
       name: trow.name,
       contact_email: trow.contact_email,
       contact_phone: trow.contact_phone,
       plan: trow.plan,
-      commission_rate: trow.commission_rate,
       is_active: trow.is_active,
       created_at: trow.created_at,
-      legal_name: legal,
-      tax_id: tax,
+      legal_name: trow.legal_name,
+      tax_id: trow.tax_id,
+      mobile_phone: trow.mobile_phone,
     });
     setManagers((mgrs ?? []) as ManagerRow[]);
     setBuildings((blist ?? []) as BuildingRow[]);
+    const grouped = groupUnitNumbersByBuildingId(unitsList.data ?? []);
+    setUnitsByBuilding(Object.fromEntries(grouped));
     setCounts({
       buildings: bc.count ?? 0,
       units: uc.count ?? 0,
@@ -176,6 +194,40 @@ export default function SuperAdminTenantDetailScreen() {
   useEffect(() => {
     if (fromNewFlow) setAddFormOpen(true);
   }, [fromNewFlow]);
+
+  function openEdit() {
+    if (!tenant) return;
+    setDraftEmail(tenant.contact_email ?? "");
+    setDraftPhone(tenant.contact_phone ?? "");
+    setDraftLegal(tenant.legal_name ?? "");
+    setDraftTax(tenant.tax_id ?? "");
+    setDraftBusinessMobile(tenant.mobile_phone ?? "");
+    setDraftPlan(tenant.plan ?? "");
+    setDraftActive(tenant.is_active !== false);
+    setEditOpen(true);
+  }
+
+  async function onSaveEdit() {
+    const tid = Array.isArray(tenantId) ? tenantId[0] : tenantId;
+    if (!tid) return;
+    setEditSaving(true);
+    const res = await updateTenantBusinessViaWebApi(tid, {
+      contact_email: draftEmail.trim() || null,
+      contact_phone: draftPhone.trim() || null,
+      legal_name: draftLegal.trim() || null,
+      tax_id: draftTax.trim() || null,
+      business_mobile_phone: draftBusinessMobile.trim() || null,
+      plan: draftPlan.trim() || null,
+      is_active: draftActive,
+    });
+    setEditSaving(false);
+    if (!res.ok) {
+      Alert.alert("שגיאה", res.error);
+      return;
+    }
+    setEditOpen(false);
+    void load();
+  }
 
   async function onAdd() {
     if (!tenantId) return;
@@ -245,6 +297,9 @@ export default function SuperAdminTenantDetailScreen() {
           טלפון: {tenant.contact_phone ?? "—"}
         </Text>
         <Text className="mt-1 text-sm text-gray-700">
+          פלאפון (פרופיל עסק): {tenant.mobile_phone ?? "—"}
+        </Text>
+        <Text className="mt-1 text-sm text-gray-700">
           שם משפטי: {tenant.legal_name ?? "—"}
         </Text>
         <Text className="mt-1 text-sm text-gray-700">
@@ -252,9 +307,6 @@ export default function SuperAdminTenantDetailScreen() {
         </Text>
         <Text className="mt-1 text-sm text-gray-700">
           תוכנית: {tenant.plan ?? "—"}
-        </Text>
-        <Text className="mt-1 text-sm text-gray-700">
-          עמלה: {tenant.commission_rate ?? "—"}
         </Text>
         <Text className="mt-1 text-sm text-gray-700">
           פעיל:{" "}
@@ -270,6 +322,14 @@ export default function SuperAdminTenantDetailScreen() {
             ? new Date(tenant.created_at).toLocaleDateString("he-IL")
             : "—"}
         </Text>
+        <Pressable
+          className="mt-4 rounded-xl border border-gray-300 bg-white px-4 py-3 active:bg-gray-50"
+          onPress={openEdit}
+        >
+          <Text className="text-center font-semibold text-gray-800">
+            עריכת פרטי עסק
+          </Text>
+        </Pressable>
       </View>
 
       <View className="mb-4 rounded-xl border border-gray-200 p-4">
@@ -281,6 +341,7 @@ export default function SuperAdminTenantDetailScreen() {
             <Text key={m.id} className="mb-1 text-sm text-gray-700">
               · {m.full_name}
               {m.phone ? ` — ${m.phone}` : ""}
+              {m.mobile_phone ? ` · פלאפון ${m.mobile_phone}` : ""}
               {m.is_active === false ? " (לא פעיל)" : ""}
             </Text>
           ))
@@ -361,25 +422,124 @@ export default function SuperAdminTenantDetailScreen() {
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-white"
-      data={buildings}
-      keyExtractor={(b) => b.id}
-      ListHeaderComponent={header}
-      ListEmptyComponent={
-        <Text className="px-3 pb-6 text-center text-gray-500">
-          אין בניינים עדיין
-        </Text>
-      }
-      renderItem={({ item }) => (
-        <View className="mx-3 mb-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <Text className="font-semibold">{item.address}</Text>
-          <Text className="text-sm text-gray-600">{item.city}</Text>
-          <Text className="text-sm text-gray-500">
-            קומות: {item.floors_count}
-          </Text>
+    <>
+      <Modal visible={editOpen} animationType="slide" transparent>
+        <View className="flex-1 justify-end bg-black/40">
+          <View className="max-h-[92%] rounded-t-2xl bg-white">
+            <ScrollView className="px-4 pb-8 pt-4" keyboardShouldPersistTaps="handled">
+              <Text className="mb-4 text-lg font-bold text-gray-900">
+                עריכת פרטי עסק
+              </Text>
+              <Text className="mb-1 text-sm text-gray-600">אימייל</Text>
+              <TextInput
+                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                value={draftEmail}
+                onChangeText={setDraftEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Text className="mb-1 text-sm text-gray-600">טלפון</Text>
+              <TextInput
+                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                value={draftPhone}
+                onChangeText={setDraftPhone}
+                keyboardType="phone-pad"
+              />
+              <Text className="mb-1 text-sm text-gray-600">
+                פלאפון (פרופיל עסק)
+              </Text>
+              <TextInput
+                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                value={draftBusinessMobile}
+                onChangeText={setDraftBusinessMobile}
+                keyboardType="phone-pad"
+              />
+              <Text className="mb-1 text-sm text-gray-600">שם משפטי</Text>
+              <TextInput
+                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                value={draftLegal}
+                onChangeText={setDraftLegal}
+              />
+              <Text className="mb-1 text-sm text-gray-600">ח״פ / עוסק</Text>
+              <TextInput
+                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                value={draftTax}
+                onChangeText={setDraftTax}
+              />
+              <Text className="mb-1 text-sm text-gray-600">תוכנית</Text>
+              <TextInput
+                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                value={draftPlan}
+                onChangeText={setDraftPlan}
+              />
+              <View className="mb-4 flex-row items-center justify-between">
+                <Text className="text-sm text-gray-700">פעיל</Text>
+                <Switch value={draftActive} onValueChange={setDraftActive} />
+              </View>
+              <Text className="mb-4 text-xs text-gray-500">
+                שדה &quot;נוצר&quot; מוצג למעלה ואינו ניתן לעריכה.
+              </Text>
+              <Pressable
+                className="mb-2 rounded-lg bg-blue-600 py-3 disabled:opacity-50"
+                disabled={editSaving}
+                onPress={() => void onSaveEdit()}
+              >
+                <Text className="text-center font-semibold text-white">
+                  {editSaving ? "שומר…" : "שמור"}
+                </Text>
+              </Pressable>
+              <Pressable
+                className="rounded-lg border border-gray-300 py-3"
+                onPress={() => setEditOpen(false)}
+              >
+                <Text className="text-center font-semibold text-gray-700">
+                  ביטול
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </View>
         </View>
-      )}
-    />
+      </Modal>
+
+      <FlatList
+        className="flex-1 bg-white"
+        data={buildings}
+        keyExtractor={(b) => b.id}
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          <Text className="px-3 pb-6 text-center text-gray-500">
+            אין בניינים עדיין
+          </Text>
+        }
+        renderItem={({ item }) => {
+          const tid = Array.isArray(tenantId) ? tenantId[0] : tenantId;
+          return (
+            <Pressable
+              className="mx-3 mb-2 rounded-lg border border-gray-100 bg-gray-50 p-3 active:opacity-80"
+              onPress={() =>
+                router.push(
+                  `/(super-admin)/tenants/${tid}/buildings/${item.id}`
+                )
+              }
+            >
+              <Text className="font-semibold text-blue-700">{item.address}</Text>
+              <Text className="text-sm text-gray-600">{item.city}</Text>
+              <Text className="text-sm text-gray-500">
+                קומות: {item.floors_count}
+                {unitsByBuilding[item.id]?.length ? (
+                  <>
+                    {" "}
+                    · דירות: {unitsByBuilding[item.id].join(", ")}
+                  </>
+                ) : (
+                  " · אין דירות רשומות"
+                )}
+                {" · הקש לפרטי בניין"}
+              </Text>
+            </Pressable>
+          );
+        }}
+      />
+    </>
   );
 }

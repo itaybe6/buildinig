@@ -14,7 +14,7 @@ export default async function SuperAdminDashboardPage() {
   const supabase = createClient();
 
   const [tenants, managers, buildings, requests] = await Promise.all([
-    supabase.from("tenants").select("id", { count: "exact", head: true }),
+    supabase.from("business_profiles").select("id", { count: "exact", head: true }),
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })

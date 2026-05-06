@@ -27,7 +27,7 @@ function authErrorMessage(msg: string): string {
 }
 
 /**
- * יוצר tenant, business_profile, משתמש Auth למנהל, ורשומת profiles (תפקיד manager).
+ * יוצר שורת business_profiles (הארגון), משתמש Auth למנהל, ורשומת profiles.
  * דורש SUPABASE_SERVICE_ROLE_KEY בשרת.
  */
 export async function bootstrapBusiness(
@@ -67,31 +67,18 @@ export async function bootstrapBusiness(
 
   const admin = createAdminClient();
 
-  const { data: tenant, error: te } = await admin
-    .from("tenants")
+  const { data: bp, error: bpe } = await admin
+    .from("business_profiles")
     .insert({
       name,
       contact_email: contactEmail || null,
       is_active: true,
-    })
-    .select("id")
-    .single();
-
-  if (te || !tenant) {
-    return { ok: false, error: te?.message ?? "שגיאה ביצירת הארגון." };
-  }
-
-  const { data: bp, error: bpe } = await admin
-    .from("business_profiles")
-    .insert({
-      tenant_id: tenant.id,
       legal_name: legalName || null,
     })
     .select("id")
     .single();
 
   if (bpe || !bp) {
-    await admin.from("tenants").delete().eq("id", tenant.id);
     return { ok: false, error: bpe?.message ?? "שגיאה ביצירת פרופיל העסק." };
   }
 
@@ -103,7 +90,6 @@ export async function bootstrapBusiness(
 
   if (authErr || !authData.user) {
     await admin.from("business_profiles").delete().eq("id", bp.id);
-    await admin.from("tenants").delete().eq("id", tenant.id);
     return {
       ok: false,
       error: authErr
@@ -114,7 +100,7 @@ export async function bootstrapBusiness(
 
   const { error: pe } = await admin.from("profiles").insert({
     auth_user_id: authData.user.id,
-    tenant_id: tenant.id,
+    tenant_id: bp.id,
     business_profile_id: bp.id,
     full_name: managerFullName,
     phone: managerPhone || null,
@@ -125,9 +111,8 @@ export async function bootstrapBusiness(
   if (pe) {
     await admin.auth.admin.deleteUser(authData.user.id);
     await admin.from("business_profiles").delete().eq("id", bp.id);
-    await admin.from("tenants").delete().eq("id", tenant.id);
     return { ok: false, error: pe.message };
   }
 
-  return { ok: true, tenantId: tenant.id };
+  return { ok: true, tenantId: bp.id };
 }

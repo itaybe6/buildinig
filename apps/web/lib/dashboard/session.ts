@@ -33,12 +33,7 @@ export async function getAuthProfile(): Promise<AuthProfile | null> {
   let businessProfileId = row.business_profile_id ?? null;
 
   if (row.tenant_id && !businessProfileId) {
-    const { data: bp } = await supabase
-      .from("business_profiles")
-      .select("id")
-      .eq("tenant_id", row.tenant_id)
-      .maybeSingle();
-    businessProfileId = bp?.id ?? null;
+    businessProfileId = row.tenant_id;
   }
 
   return {
@@ -88,12 +83,7 @@ export async function getManagerTenantContext(): Promise<ManagerTenantContext> {
   let businessProfileId = profile.businessProfileId;
 
   if (!businessProfileId) {
-    const { data: bp } = await supabase
-      .from("business_profiles")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
-    businessProfileId = bp?.id ?? null;
+    businessProfileId = tenantId;
   }
 
   if (!businessProfileId) {
