@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/.env.*local",
+    "**/.env.local",
+    "branding/**/.env",
+    "branding/**/theme.json",
+    "branding/**/app.config.json",
+    "branding/**/web.config.json",
+    "branding/current.json"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "CLIENT",
+    "BUSINESS_ID",
+    "EXPO_PUBLIC_SUPABASE_URL",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+    "EXPO_PUBLIC_BUSINESS_ID",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_BUSINESS_ID",
+    "NEXT_PUBLIC_CLIENT"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {},
+    "clean": {
+      "cache": false
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "branding": {
+    "companyName": "ניהול נכסים",
+    "website": "https://example.com",
+    "supportEmail": "support@example.com"
+  },
+  "fonts": {
+    "sans": "Rubik"
+  },
+  "colors": {
+    "primary": "#2563eb",
+    "primaryForeground": "#ffffff",
+    "secondary": "#f1f5f9",
+    "secondaryForeground": "#0f172a",
+    "background": "#ffffff",
+    "foreground": "#0f172a",
+    "card": "#ffffff",
+    "cardForeground": "#0f172a",
+    "muted": "#f1f5f9",
+    "mutedForeground": "#64748b",
+    "accent": "#f1f5f9",
+    "accentForeground": "#0f172a",
+    "border": "#e2e8f0",
+    "input": "#e2e8f0",
+    "ring": "#2563eb",
+    "destructive": "#ef4444",
+    "destructiveForeground": "#ffffff"
+  },
+  "radius": "0.5rem"
+}

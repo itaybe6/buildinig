@@ -1,0 +1,20 @@
+{
+  "name": "ניהול נכסים",
+  "shortName": "Default",
+  "slug": "my-project-mobile-default",
+  "scheme": "myproject-default",
+  "ios": {
+    "bundleIdentifier": "com.myproject.default",
+    "supportsTablet": true
+  },
+  "android": {
+    "package": "com.myproject.defaultapp"
+  },
+  "icon": "./icon.png",
+  "splash": {
+    "image": "./splash.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#ffffff"
+  },
+  "extraPlugins": []
+}

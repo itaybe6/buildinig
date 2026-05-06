@@ -1,0 +1,20 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "Default": {
+      "node": "20.19.4",
+      "autoIncrement": true,
+      "env": {
+        "CLIENT": "Default",
+        "ENV_FILE": "branding/Default/.env",
+        "EAS_PROJECT_ID": "REPLACE_ME_WITH_EXPO_PROJECT_ID",
+        "RCT_NEW_ARCH_ENABLED": "1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
