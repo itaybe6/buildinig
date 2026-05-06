@@ -1,4 +1,8 @@
 import type { Database } from "@my-project/supabase";
+import {
+  businessProfileIdFromJwtAppMetadata,
+  inferBusinessProfileIdFromProfileLinks,
+} from "@my-project/shared";
 import { createClient } from "@supabase/supabase-js";
 
 export type ManagerBearerScope = {
@@ -38,23 +42,31 @@ export async function resolveManagerBearerScope(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, tenant_id, business_profile_id")
+    .select("id, role, business_profile_id, building_id, unit_id")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  if (!profile || profile.role !== "manager" || !profile.tenant_id) {
+  if (!profile || profile.role !== "manager") {
     return null;
   }
 
-  const businessProfileId =
-    profile.business_profile_id ?? profile.tenant_id;
+  const jwtBiz = businessProfileIdFromJwtAppMetadata(user.app_metadata);
+  let businessProfileId = profile.business_profile_id ?? jwtBiz ?? null;
+  if (!businessProfileId) {
+    businessProfileId = await inferBusinessProfileIdFromProfileLinks(
+      supabase,
+      profile
+    );
+  }
 
-  if (!businessProfileId) return null;
+  if (!businessProfileId) {
+    return null;
+  }
 
   return {
     userId: user.id,
     profileId: profile.id,
-    tenantId: profile.tenant_id,
+    tenantId: businessProfileId,
     businessProfileId,
   };
 }

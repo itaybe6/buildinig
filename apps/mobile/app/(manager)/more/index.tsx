@@ -2,10 +2,12 @@ import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 const ITEMS: { label: string; path: string }[] = [
+  { label: "דיירים", path: "/(manager)/more/residents" },
   { label: "עובדים", path: "/(manager)/more/employees" },
   { label: "לוח מודעות", path: "/(manager)/more/announcements" },
   { label: "תשלומים", path: "/(manager)/more/payments" },
   { label: "סוגי שירות", path: "/(manager)/more/service-types" },
+  { label: "פרופיל", path: "/(manager)/more/profile" },
   { label: "הגדרות ארגון", path: "/(manager)/more/tenant-settings" },
 ];
 

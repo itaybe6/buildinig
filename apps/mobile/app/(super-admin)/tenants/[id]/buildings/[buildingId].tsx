@@ -14,7 +14,6 @@ type ProfileRow = {
   id: string;
   full_name: string;
   phone: string | null;
-  mobile_phone: string | null;
   role: string;
   is_active: boolean | null;
 };
@@ -41,7 +40,7 @@ export default function SuperAdminBuildingDetailScreen() {
 
     const { data: b, error: be } = await supabase
       .from("buildings")
-      .select("tenant_id, address, city, floors_count")
+      .select("business_profile_id, address, city, floors_count")
       .eq("id", bid)
       .maybeSingle();
 
@@ -52,7 +51,7 @@ export default function SuperAdminBuildingDetailScreen() {
       return;
     }
 
-    if (b.tenant_id !== tid) {
+    if (b.business_profile_id !== tid) {
       setLoading(false);
       Alert.alert("שגיאה", "הבניין אינו שייך לעסק זה.");
       router.back();
@@ -67,7 +66,7 @@ export default function SuperAdminBuildingDetailScreen() {
 
     const { data: plist, error: pe } = await supabase
       .from("profiles")
-      .select("id, full_name, phone, mobile_phone, role, is_active")
+      .select("id, full_name, phone, role, is_active")
       .eq("building_id", bid)
       .order("full_name");
 
@@ -128,7 +127,7 @@ export default function SuperAdminBuildingDetailScreen() {
             >
               <Text className="font-semibold text-gray-900">{p.full_name}</Text>
               <Text className="text-sm text-gray-600">
-                טלפון: {p.phone ?? "—"} · פלאפון: {p.mobile_phone ?? "—"} ·{" "}
+                טלפון: {p.phone ?? "—"} ·{" "}
                 {p.role}
                 {p.is_active === false ? " · לא פעיל" : ""}
               </Text>

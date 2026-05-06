@@ -16,11 +16,11 @@ type BusinessProfileRow =
   Database["public"]["Tables"]["business_profiles"]["Row"];
 type ManagerPick = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "tenant_id" | "full_name"
+  "business_profile_id" | "full_name"
 >;
 type OrphanManager = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "id" | "full_name" | "phone" | "mobile_phone" | "created_at"
+  "id" | "full_name" | "phone" | "created_at"
 >;
 
 export default async function SuperAdminTenantsPage() {
@@ -36,15 +36,15 @@ export default async function SuperAdminTenantsPage() {
 
   const { data: managersRaw } = await supabase
     .from("profiles")
-    .select("tenant_id, full_name")
+    .select("business_profile_id, full_name")
     .eq("role", "manager")
-    .not("tenant_id", "is", null);
+    .not("business_profile_id", "is", null);
 
   const { data: orphanManagersRaw } = await supabase
     .from("profiles")
-    .select("id, full_name, phone, mobile_phone, created_at")
+    .select("id, full_name, phone, created_at")
     .eq("role", "manager")
-    .is("tenant_id", null)
+    .is("business_profile_id", null)
     .order("created_at", { ascending: false });
 
   const tenants = (tenantsRaw ?? []) as BusinessProfileRow[];
@@ -53,10 +53,10 @@ export default async function SuperAdminTenantsPage() {
 
   const managersByTenant = new Map<string, string[]>();
   for (const m of managersList) {
-    if (!m.tenant_id) continue;
-    const list = managersByTenant.get(m.tenant_id) ?? [];
+    if (!m.business_profile_id) continue;
+    const list = managersByTenant.get(m.business_profile_id) ?? [];
     list.push(m.full_name);
-    managersByTenant.set(m.tenant_id, list);
+    managersByTenant.set(m.business_profile_id, list);
   }
 
   return (
@@ -71,8 +71,10 @@ export default async function SuperAdminTenantsPage() {
             <code className="rounded bg-muted px-1 text-xs">
               business_profiles
             </code>
-            . מנהל משויך דרך{" "}
-            <code className="rounded bg-muted px-1 text-xs">profiles.tenant_id</code>{" "}
+            .             מנהל משויך דרך{" "}
+            <code className="rounded bg-muted px-1 text-xs">
+              profiles.business_profile_id
+            </code>{" "}
             לאותו מזהה.
           </p>
         </div>
@@ -89,7 +91,10 @@ export default async function SuperAdminTenantsPage() {
             </CardTitle>
             <CardDescription className="text-amber-900">
               משתמשים עם role מנהל אבל ללא{" "}
-              <code className="rounded bg-white/80 px-1">tenant_id</code> — לא
+              <code className="rounded bg-white/80 px-1">
+                business_profile_id
+              </code>{" "}
+              — לא
               יופיעו תחת לקוח עד שתשייכו אותם לעסק.
             </CardDescription>
           </CardHeader>
@@ -100,7 +105,6 @@ export default async function SuperAdminTenantsPage() {
                   <tr>
                     <th className="px-3 py-2 text-start font-medium">שם</th>
                     <th className="px-3 py-2 text-start font-medium">טלפון</th>
-                    <th className="px-3 py-2 text-start font-medium">פלאפון</th>
                     <th className="px-3 py-2 text-start font-medium">נוצר</th>
                   </tr>
                 </thead>
@@ -110,9 +114,6 @@ export default async function SuperAdminTenantsPage() {
                       <td className="px-3 py-2 font-medium">{o.full_name}</td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {o.phone ?? "—"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {o.mobile_phone ?? "—"}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {o.created_at

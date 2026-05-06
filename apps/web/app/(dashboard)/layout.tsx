@@ -21,7 +21,7 @@ export default async function DashboardGroupLayout({
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, business_profile_id")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -29,11 +29,25 @@ export default async function DashboardGroupLayout({
     redirect("/login");
   }
 
-  const profile = profileRow as { full_name: string; role: UserRole };
+  const profile = profileRow as {
+    full_name: string;
+    role: UserRole;
+    business_profile_id: string | null;
+  };
   const role = profile.role;
 
-  if (role === "resident") {
-    redirect("/unauthorized");
+  let managerBrand:
+    | { name: string; logoUrl: string | null }
+    | undefined;
+  if (role === "manager" && profile.business_profile_id) {
+    const { data: bp } = await supabase
+      .from("business_profiles")
+      .select("name, logo_url")
+      .eq("id", profile.business_profile_id)
+      .maybeSingle();
+    if (bp) {
+      managerBrand = { name: bp.name, logoUrl: bp.logo_url };
+    }
   }
 
   const cfg = getWebConfig();
@@ -44,6 +58,7 @@ export default async function DashboardGroupLayout({
       role={role}
       displayName={profile.full_name}
       contentDir={contentDir}
+      managerBrand={managerBrand}
     >
       {children}
     </DashboardShell>

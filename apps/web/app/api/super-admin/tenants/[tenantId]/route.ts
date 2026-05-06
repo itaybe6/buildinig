@@ -64,10 +64,6 @@ export async function PATCH(
         : null,
     tax_id:
       typeof body.tax_id === "string" ? body.tax_id.trim() || null : null,
-    business_mobile_phone:
-      typeof body.business_mobile_phone === "string"
-        ? body.business_mobile_phone.trim() || null
-        : null,
   });
 
   if (!result.ok) {

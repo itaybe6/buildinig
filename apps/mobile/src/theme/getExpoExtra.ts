@@ -8,6 +8,8 @@ type ExpoExtra = {
   BUSINESS_ID?: string;
   EXPO_PUBLIC_SUPABASE_URL?: string;
   EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
+  /** בסיס ה־URL של אפליקציית הווב (למשל http://192.168.1.5:3000) — נדרש להתחברות מול /api/auth/login */
+  EXPO_PUBLIC_WEB_API_ORIGIN?: string;
   theme?: Partial<Theme>;
 };
 

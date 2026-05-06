@@ -32,14 +32,12 @@ type TenantDetail = {
   created_at: string | null;
   legal_name: string | null;
   tax_id: string | null;
-  mobile_phone: string | null;
 };
 
 type ManagerRow = {
   id: string;
   full_name: string;
   phone: string | null;
-  mobile_phone: string | null;
   is_active: boolean | null;
 };
 
@@ -78,7 +76,6 @@ export default function SuperAdminTenantDetailScreen() {
   const [draftPhone, setDraftPhone] = useState("");
   const [draftLegal, setDraftLegal] = useState("");
   const [draftTax, setDraftTax] = useState("");
-  const [draftBusinessMobile, setDraftBusinessMobile] = useState("");
   const [draftPlan, setDraftPlan] = useState("");
   const [draftActive, setDraftActive] = useState(true);
 
@@ -99,8 +96,7 @@ export default function SuperAdminTenantDetailScreen() {
         is_active,
         created_at,
         legal_name,
-        tax_id,
-        mobile_phone
+        tax_id
       `
       )
       .eq("id", tid)
@@ -109,38 +105,38 @@ export default function SuperAdminTenantDetailScreen() {
     const { data: blist, error: be } = await supabase
       .from("buildings")
       .select("id, address, city, floors_count")
-      .eq("tenant_id", tid)
+      .eq("business_profile_id", tid)
       .order("address");
 
     const { data: mgrs, error: me } = await supabase
       .from("profiles")
-      .select("id, full_name, phone, mobile_phone, is_active")
+      .select("id, full_name, phone, is_active")
       .eq("role", "manager")
-      .eq("tenant_id", tid)
+      .eq("business_profile_id", tid)
       .order("full_name");
 
     const [bc, uc, rc, orc, unitsList] = await Promise.all([
       supabase
         .from("buildings")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tid),
+        .eq("business_profile_id", tid),
       supabase
         .from("units")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tid),
+        .eq("business_profile_id", tid),
       supabase
         .from("service_requests")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tid),
+        .eq("business_profile_id", tid),
       supabase
         .from("service_requests")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tid)
+        .eq("business_profile_id", tid)
         .in("status", ["open", "assigned", "in_progress"]),
       supabase
         .from("units")
         .select("building_id, unit_number")
-        .eq("tenant_id", tid),
+        .eq("business_profile_id", tid),
     ]);
 
     setLoading(false);
@@ -173,7 +169,6 @@ export default function SuperAdminTenantDetailScreen() {
       created_at: trow.created_at,
       legal_name: trow.legal_name,
       tax_id: trow.tax_id,
-      mobile_phone: trow.mobile_phone,
     });
     setManagers((mgrs ?? []) as ManagerRow[]);
     setBuildings((blist ?? []) as BuildingRow[]);
@@ -201,7 +196,6 @@ export default function SuperAdminTenantDetailScreen() {
     setDraftPhone(tenant.contact_phone ?? "");
     setDraftLegal(tenant.legal_name ?? "");
     setDraftTax(tenant.tax_id ?? "");
-    setDraftBusinessMobile(tenant.mobile_phone ?? "");
     setDraftPlan(tenant.plan ?? "");
     setDraftActive(tenant.is_active !== false);
     setEditOpen(true);
@@ -216,7 +210,6 @@ export default function SuperAdminTenantDetailScreen() {
       contact_phone: draftPhone.trim() || null,
       legal_name: draftLegal.trim() || null,
       tax_id: draftTax.trim() || null,
-      business_mobile_phone: draftBusinessMobile.trim() || null,
       plan: draftPlan.trim() || null,
       is_active: draftActive,
     });
@@ -235,7 +228,7 @@ export default function SuperAdminTenantDetailScreen() {
     setSaving(true);
     const floorsCount = Math.max(1, Number.parseInt(floors, 10) || 1);
     const { error } = await supabase.from("buildings").insert({
-      tenant_id: tid,
+      business_profile_id: tid,
       address: address.trim(),
       city: city.trim(),
       floors_count: floorsCount,
@@ -297,9 +290,6 @@ export default function SuperAdminTenantDetailScreen() {
           טלפון: {tenant.contact_phone ?? "—"}
         </Text>
         <Text className="mt-1 text-sm text-gray-700">
-          פלאפון (פרופיל עסק): {tenant.mobile_phone ?? "—"}
-        </Text>
-        <Text className="mt-1 text-sm text-gray-700">
           שם משפטי: {tenant.legal_name ?? "—"}
         </Text>
         <Text className="mt-1 text-sm text-gray-700">
@@ -341,7 +331,6 @@ export default function SuperAdminTenantDetailScreen() {
             <Text key={m.id} className="mb-1 text-sm text-gray-700">
               · {m.full_name}
               {m.phone ? ` — ${m.phone}` : ""}
-              {m.mobile_phone ? ` · פלאפון ${m.mobile_phone}` : ""}
               {m.is_active === false ? " (לא פעיל)" : ""}
             </Text>
           ))
@@ -443,15 +432,6 @@ export default function SuperAdminTenantDetailScreen() {
                 className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
                 value={draftPhone}
                 onChangeText={setDraftPhone}
-                keyboardType="phone-pad"
-              />
-              <Text className="mb-1 text-sm text-gray-600">
-                פלאפון (פרופיל עסק)
-              </Text>
-              <TextInput
-                className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
-                value={draftBusinessMobile}
-                onChangeText={setDraftBusinessMobile}
                 keyboardType="phone-pad"
               />
               <Text className="mb-1 text-sm text-gray-600">שם משפטי</Text>

@@ -1,4 +1,5 @@
 import { AddBuildingResidentForm } from "@/components/manager/add-building-resident-form";
+import { ManagerBuildingUnitsPanel } from "@/components/manager/manager-building-units-panel";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -55,6 +56,37 @@ export default async function BuildingDetailPage({
     .eq("business_profile_id", ctx.businessProfileId)
     .order("unit_number");
 
+  const { data: unitResidents } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone, unit_id")
+    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("building_id", params.id)
+    .not("unit_id", "is", null);
+
+  const residentByUnitId = new Map(
+    (unitResidents ?? []).map((p) => [p.unit_id as string, p])
+  );
+
+  const unitsWithResident = (units ?? []).map((u) => {
+    const r = residentByUnitId.get(u.id);
+    return {
+      ...u,
+      resident: r
+        ? { id: r.id, full_name: r.full_name, phone: r.phone }
+        : null,
+    };
+  });
+
+  const { data: eligibleRaw } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone")
+    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("role", "resident")
+    .is("unit_id", null)
+    .or(`building_id.is.null,building_id.eq.${params.id}`);
+
+  const eligibleProfiles = eligibleRaw ?? [];
+
   const profiles = linkedProfiles ?? [];
 
   return (
@@ -91,7 +123,7 @@ export default async function BuildingDetailPage({
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold tabular-nums">
-              {units?.length ?? 0}
+              {unitsWithResident.length}
             </p>
           </CardContent>
         </Card>
@@ -107,6 +139,12 @@ export default async function BuildingDetailPage({
           </CardContent>
         </Card>
       ) : null}
+
+      <ManagerBuildingUnitsPanel
+        buildingId={params.id}
+        units={unitsWithResident}
+        eligibleProfiles={eligibleProfiles}
+      />
 
       <div>
         <h2 className="mb-3 text-lg font-medium">
@@ -151,42 +189,6 @@ export default async function BuildingDetailPage({
       </div>
 
       <AddBuildingResidentForm buildingId={params.id} />
-
-      <div>
-        <h2 className="mb-3 text-lg font-medium">דירות</h2>
-        {!units?.length ? (
-          <Card>
-            <CardContent className="py-6 text-sm text-muted-foreground">
-              אין דירות רשומות לבניין זה.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-[560px] text-sm">
-              <thead className="border-b bg-muted/50">
-                <tr>
-                  <th className="px-3 py-2 text-start font-medium">מספר דירה</th>
-                  <th className="px-3 py-2 text-start font-medium">מספר קומה</th>
-                  <th className="px-3 py-2 text-start font-medium">סוג</th>
-                  <th className="px-3 py-2 text-start font-medium">ועד חודשי</th>
-                </tr>
-              </thead>
-              <tbody>
-                {units.map((u) => (
-                  <tr key={u.id} className="border-b last:border-0">
-                    <td className="px-3 py-2 font-medium">{u.unit_number}</td>
-                    <td className="px-3 py-2 tabular-nums">
-                      {u.floor_number ?? "—"}
-                    </td>
-                    <td className="px-3 py-2">{u.type ?? "—"}</td>
-                    <td className="px-3 py-2 tabular-nums">{u.monthly_fee ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

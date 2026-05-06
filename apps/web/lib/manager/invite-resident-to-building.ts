@@ -18,13 +18,14 @@ function duplicateEmailMessage(msg: string): string {
  * יוצה משתמש Auth + פרופיל דייר משויך לבניין (דורש SUPABASE_SERVICE_ROLE_KEY).
  */
 export async function inviteResidentToBuilding(params: {
-  tenantId: string;
   businessProfileId: string;
   buildingId: string;
   fullName: string;
   email: string;
   password: string;
   phone?: string;
+  /** משייך את הדייר שנוצר לדירה ספציפית (profiles.unit_id) */
+  unitId?: string;
 }): Promise<InviteResidentResult> {
   if (!hasServiceRoleKey()) {
     return {
@@ -37,18 +38,38 @@ export async function inviteResidentToBuilding(params: {
   const admin = createAdminClient();
   const { data: building, error: be } = await admin
     .from("buildings")
-    .select("id, tenant_id, business_profile_id")
+    .select("id, business_profile_id")
     .eq("id", params.buildingId)
     .maybeSingle();
 
   if (be || !building) {
     return { ok: false, error: "בניין לא נמצא." };
   }
-  if (
-    building.tenant_id !== params.tenantId ||
-    building.business_profile_id !== params.businessProfileId
-  ) {
+  if (building.business_profile_id !== params.businessProfileId) {
     return { ok: false, error: "אין הרשאה לבניין זה." };
+  }
+
+  let resolvedUnitId: string | null = null;
+  if (params.unitId) {
+    const { data: unit, error: ue } = await admin
+      .from("units")
+      .select("id, building_id, business_profile_id")
+      .eq("id", params.unitId)
+      .maybeSingle();
+    if (ue || !unit) {
+      return { ok: false, error: "דירה לא נמצאה." };
+    }
+    if (
+      unit.building_id !== params.buildingId ||
+      unit.business_profile_id !== params.businessProfileId
+    ) {
+      return { ok: false, error: "הדירה אינה שייכת לבניין זה." };
+    }
+    resolvedUnitId = unit.id;
+    await admin
+      .from("profiles")
+      .update({ unit_id: null })
+      .eq("unit_id", resolvedUnitId);
   }
 
   const email = params.email.trim().toLowerCase();
@@ -79,9 +100,9 @@ export async function inviteResidentToBuilding(params: {
 
   const { error: pe } = await admin.from("profiles").insert({
     auth_user_id: authData.user.id,
-    tenant_id: params.tenantId,
     business_profile_id: params.businessProfileId,
     building_id: params.buildingId,
+    unit_id: resolvedUnitId,
     full_name: params.fullName.trim(),
     phone: params.phone?.trim() || null,
     role: "resident",

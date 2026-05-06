@@ -35,7 +35,7 @@ export function SuperAdminAddBuildingForm({
     const floorsCount = Math.max(1, Number.parseInt(floors, 10) || 1);
     const supabase = createClient();
     const row = {
-      tenant_id: tenantId,
+      business_profile_id: tenantId,
       address: address.trim(),
       city: city.trim(),
       floors_count: floorsCount,

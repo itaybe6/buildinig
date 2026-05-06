@@ -1,6 +1,10 @@
 "use client";
 
-import { loginFormSchema, type LoginFormValues } from "@my-project/shared";
+import {
+  loginFormSchema,
+  type LoginFormValues,
+  type UserRole,
+} from "@my-project/shared";
 import { Button, Input, Label } from "@my-project/ui-web";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/supabase/client";
@@ -16,21 +20,55 @@ export default function LoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { phone: "", password: "" },
   });
 
   async function onSubmit(values: LoginFormValues) {
     setError(null);
-    const { error: signError } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        phone: values.phone,
+        password: values.password,
+      }),
     });
-    if (signError) {
-      setError(signError.message);
+    let payload: { error?: string } = {};
+    try {
+      payload = await res.json();
+    } catch {
+      setError("תגובת השרת לא תקינה");
       return;
     }
+    if (!res.ok) {
+      setError(payload.error ?? "התחברות נכשלה");
+      return;
+    }
+    await supabase.auth.getSession();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setError("לא התקבל משתמש מהשרת");
+      return;
+    }
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    const role = profileRow?.role as UserRole | undefined;
     router.refresh();
-    router.push("/dashboard");
+    if (role === "super_admin") {
+      router.replace("/super-admin/dashboard");
+    } else if (role === "resident") {
+      router.replace("/home");
+    } else if (role === "employee") {
+      router.replace("/assignments");
+    } else {
+      router.replace("/dashboard");
+    }
   }
 
   return (
@@ -39,7 +77,7 @@ export default function LoginPage() {
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold">התחברות</h1>
           <p className="text-sm text-muted-foreground">
-            ממשק מנהלים — אימייל וסיסמה
+            התחברות — מספר טלפון וסיסמה
           </p>
         </div>
         <form
@@ -48,18 +86,18 @@ export default function LoginPage() {
           noValidate
         >
           <div className="space-y-2">
-            <Label htmlFor="email">אימייל</Label>
+            <Label htmlFor="phone">מספר טלפון</Label>
             <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="050-0000000"
               dir="ltr"
-              {...form.register("email")}
+              {...form.register("phone")}
             />
-            {form.formState.errors.email ? (
+            {form.formState.errors.phone ? (
               <p className="text-xs text-destructive">
-                {form.formState.errors.email.message}
+                {form.formState.errors.phone.message}
               </p>
             ) : null}
           </div>
@@ -92,8 +130,7 @@ export default function LoginPage() {
           </Button>
         </form>
         <p className="text-center text-xs text-muted-foreground">
-          דיירים / אפליקציית מובייל —{" "}
-          <span className="font-medium">יש להשתמש באפליקציה</span>
+          דיירים ועובדים יכולים להשתמש גם בדפדפן לאחר ההתחברות.
         </p>
         <p className="text-center text-xs">
           <Link href="/" className="text-primary underline-offset-4 hover:underline">

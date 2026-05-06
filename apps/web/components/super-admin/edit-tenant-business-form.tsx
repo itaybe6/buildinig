@@ -30,8 +30,6 @@ type Defaults = {
   contact_phone: string | null;
   legal_name: string | null;
   tax_id: string | null;
-  /** business_profiles.mobile_phone */
-  business_mobile_phone: string | null;
   plan: string | null;
   is_active: boolean | null;
 };
@@ -61,7 +59,7 @@ function EditTenantBusinessFields({
       action={formAction}
       className="space-y-4 rounded-xl border bg-muted/20 p-4"
     >
-      <input type="hidden" name="tenant_id" value={tenantId} />
+      <input type="hidden" name="business_profile_id" value={tenantId} />
 
       {state?.ok === false ? (
         <p className="text-sm text-destructive">{state.error}</p>
@@ -107,17 +105,6 @@ function EditTenantBusinessFields({
             name="tax_id"
             defaultValue={defaults.tax_id ?? ""}
             className={cn(inputClass)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`bmp-${tenantId}`}>פלאפון (פרופיל עסק)</Label>
-          <Input
-            id={`bmp-${tenantId}`}
-            name="business_mobile_phone"
-            type="tel"
-            defaultValue={defaults.business_mobile_phone ?? ""}
-            className={cn(inputClass)}
-            dir="ltr"
           />
         </div>
         <div className="space-y-2">

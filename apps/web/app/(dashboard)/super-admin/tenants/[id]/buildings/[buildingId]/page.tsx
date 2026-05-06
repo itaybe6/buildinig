@@ -16,7 +16,6 @@ type ProfileRow = Pick<
   | "id"
   | "full_name"
   | "phone"
-  | "mobile_phone"
   | "role"
   | "is_active"
   | "created_at"
@@ -60,7 +59,6 @@ function ProfileLines({ profiles: list }: { profiles: ProfileRow[] }) {
             · {p.role}
             {p.is_active === false ? " · לא פעיל" : ""}
             {p.phone ? ` · ${p.phone}` : ""}
-            {p.mobile_phone ? ` · ${p.mobile_phone}` : ""}
           </span>
         </li>
       ))}
@@ -75,7 +73,9 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
 
   const { data: building, error: be } = await supabase
     .from("buildings")
-    .select("id, tenant_id, address, city, floors_count, is_active, created_at")
+    .select(
+      "id, business_profile_id, address, city, floors_count, is_active, created_at"
+    )
     .eq("id", params.buildingId)
     .maybeSingle();
 
@@ -90,7 +90,7 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
     );
   }
 
-  if (!building || building.tenant_id !== params.id) {
+  if (!building || building.business_profile_id !== params.id) {
     notFound();
   }
 
@@ -106,7 +106,7 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
   const { data: profiles, error: pe } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, phone, mobile_phone, role, is_active, created_at, unit_id"
+      "id, full_name, phone, role, is_active, created_at, unit_id"
     )
     .eq("building_id", params.buildingId)
     .order("full_name");
@@ -340,7 +340,6 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
                   <tr>
                     <th className="px-3 py-2 text-start font-medium">שם</th>
                     <th className="px-3 py-2 text-start font-medium">טלפון</th>
-                    <th className="px-3 py-2 text-start font-medium">פלאפון</th>
                     <th className="px-3 py-2 text-start font-medium">תפקיד</th>
                     <th className="px-3 py-2 text-start font-medium">פעיל</th>
                   </tr>
@@ -350,7 +349,6 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
                     <tr key={p.id} className="border-b last:border-0">
                       <td className="px-3 py-2 font-medium">{p.full_name}</td>
                       <td className="px-3 py-2">{p.phone ?? "—"}</td>
-                      <td className="px-3 py-2">{p.mobile_phone ?? "—"}</td>
                       <td className="px-3 py-2">{p.role}</td>
                       <td className="px-3 py-2">
                         {p.is_active === false ? "לא" : "כן"}

@@ -22,14 +22,16 @@ export async function inviteResidentForBuildingAction(
     return { ok: false, error: "חסר מזהה בניין." };
   }
 
+  const unitIdRaw = String(formData.get("unit_id") ?? "").trim();
+
   const result = await inviteResidentToBuilding({
-    tenantId: ctx.tenantId,
     businessProfileId: ctx.businessProfileId,
     buildingId,
     fullName: String(formData.get("full_name") ?? ""),
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
     phone: String(formData.get("phone") ?? ""),
+    unitId: unitIdRaw || undefined,
   });
 
   if (!result.ok) {

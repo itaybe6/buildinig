@@ -12,7 +12,6 @@ export type UpdateTenantBusinessInput = {
   is_active: boolean;
   legal_name: string | null;
   tax_id: string | null;
-  business_mobile_phone: string | null;
 };
 
 export type UpdateTenantBusinessResult =
@@ -43,7 +42,6 @@ export async function updateTenantBusiness(
     is_active: input.is_active,
     legal_name: input.legal_name,
     tax_id: input.tax_id,
-    mobile_phone: input.business_mobile_phone,
     updated_at: now,
   };
 

@@ -42,9 +42,11 @@ function NavLinks({
 export function MobileDashboardNav({
   role,
   displayName,
+  managerBrand,
 }: {
   role: UserRole;
   displayName: string;
+  managerBrand?: { name: string; logoUrl: string | null };
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -61,9 +63,36 @@ export function MobileDashboardNav({
         >
           תפריט
         </button>
-        <div className="min-w-0 flex-1 text-end">
-          <p className="text-xs text-muted-foreground">מחובר/ת</p>
-          <p className="truncate text-sm font-semibold">{displayName}</p>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-end">
+          {managerBrand ? (
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              <div className="min-w-0 text-end">
+                <p className="truncate text-xs font-semibold text-foreground">
+                  {managerBrand.name}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {displayName}
+                </p>
+              </div>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-card">
+                {managerBrand.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={managerBrand.logoUrl}
+                    alt=""
+                    className="h-full w-full object-contain p-0.5"
+                  />
+                ) : (
+                  <span className="text-[9px] text-muted-foreground">—</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">מחובר/ת</p>
+              <p className="truncate text-sm font-semibold">{displayName}</p>
+            </div>
+          )}
         </div>
       </header>
 
@@ -88,11 +117,20 @@ export function MobileDashboardNav({
                 </button>
               </div>
               <nav className="flex-1 space-y-6">
-                <NavLinks
-                  items={sections.primary}
-                  pathname={pathname}
-                  onNavigate={() => setOpen(false)}
-                />
+                {sections.groups.map((group, idx) => (
+                  <div key={idx}>
+                    {group.title ? (
+                      <p className="mb-2 px-2 text-xs font-semibold uppercase text-muted-foreground">
+                        {group.title}
+                      </p>
+                    ) : null}
+                    <NavLinks
+                      items={group.items}
+                      pathname={pathname}
+                      onNavigate={() => setOpen(false)}
+                    />
+                  </div>
+                ))}
                 {sections.admin && sections.admin.length > 0 ? (
                   <div>
                     <p className="mb-2 px-2 text-xs font-semibold uppercase text-muted-foreground">

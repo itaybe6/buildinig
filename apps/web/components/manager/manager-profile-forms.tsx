@@ -6,6 +6,7 @@ import {
   updateManagerBusinessAction,
   updateManagerUserProfileAction,
 } from "@/app/(dashboard)/(manager)/profile/actions";
+import { BusinessLogoUpload } from "@/components/manager/business-logo-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ import {
   CardTitle,
 } from "@my-project/ui-web";
 import { createClient as createBrowserSupabase } from "@/lib/supabase/client";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
@@ -28,7 +30,6 @@ type BusinessDefaults = {
   contact_phone: string | null;
   legal_name: string | null;
   tax_id: string | null;
-  mobile_phone: string | null;
   notes: string | null;
   plan: string | null;
   is_active: boolean | null;
@@ -38,8 +39,8 @@ type BusinessDefaults = {
 
 type ProfileDefaults = {
   full_name: string;
+  /** פלאפון — נשמר ב-profiles.phone */
   phone: string | null;
-  mobile_phone: string | null;
 };
 
 function SubmitButton({ label }: { label: string }) {
@@ -51,24 +52,206 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-function ManagerBusinessForm({
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="text-sm">{children}</div>
+    </div>
+  );
+}
+
+function ManagerBusinessSection({
+  tenantId,
   defaults,
 }: {
+  tenantId: string;
   defaults: BusinessDefaults;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const [logoUrl, setLogoUrl] = useState(defaults.logo_url ?? "");
+
+  useEffect(() => {
+    setLogoUrl(defaults.logo_url ?? "");
+  }, [defaults.logo_url]);
+
+  useEffect(() => {
+    if (!editing) {
+      setLogoUrl(defaults.logo_url ?? "");
+    }
+  }, [editing, defaults.logo_url]);
+
+  const openEdit = useCallback(() => {
+    setLogoUrl(defaults.logo_url ?? "");
+    setFormKey((k) => k + 1);
+    setEditing(true);
+  }, [defaults.logo_url]);
+
+  const closeEdit = useCallback(() => setEditing(false), []);
+
+  return (
+    <Card className="overflow-hidden border-border/80 shadow-sm">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 border-b bg-muted/20 pb-4">
+        <div className="space-y-1">
+          <CardTitle className="text-xl">פרטי עסק</CardTitle>
+          <CardDescription>
+            פרטים מטבלת business_profiles — עריכה לפי צורך.
+          </CardDescription>
+        </div>
+        {!editing ? (
+          <Button type="button" variant="outline" size="sm" onClick={openEdit}>
+            עריכה
+          </Button>
+        ) : null}
+      </CardHeader>
+      <CardContent className="pt-6">
+        {!editing ? (
+          <ManagerBusinessView defaults={defaults} />
+        ) : (
+          <ManagerBusinessEditForm
+            key={formKey}
+            tenantId={tenantId}
+            defaults={defaults}
+            logoUrl={logoUrl}
+            onLogoUrlChange={setLogoUrl}
+            onSaved={closeEdit}
+            onCancel={closeEdit}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ManagerBusinessView({ defaults }: { defaults: BusinessDefaults }) {
+  const src = defaults.logo_url?.trim();
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start gap-6">
+        <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-background shadow-inner">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={src}
+              alt=""
+              className="max-h-full max-w-full object-contain p-2"
+            />
+          ) : (
+            <span className="px-3 text-center text-xs text-muted-foreground">
+              ללא לוגו
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight">
+              {defaults.name}
+            </h3>
+            {defaults.legal_name ? (
+              <p className="text-sm text-muted-foreground">{defaults.legal_name}</p>
+            ) : null}
+          </div>
+          <div className="grid gap-4 text-sm sm:grid-cols-2">
+            <Field label="אימייל יצירת קשר">
+              {defaults.contact_email ?? "—"}
+            </Field>
+            <Field label="טלפון">{defaults.contact_phone ?? "—"}</Field>
+            <Field label="ח״פ / עוסק">{defaults.tax_id ?? "—"}</Field>
+            <Field label="צבע ראשי">
+              {defaults.primary_color ? (
+                <span className="inline-flex items-center gap-2 font-mono text-xs">
+                  <span
+                    className="inline-block h-5 w-5 rounded border"
+                    style={{ backgroundColor: defaults.primary_color }}
+                  />
+                  {defaults.primary_color}
+                </span>
+              ) : (
+                "—"
+              )}
+            </Field>
+          </div>
+        </div>
+      </div>
+
+      {defaults.notes ? (
+        <div className="rounded-xl border bg-muted/30 p-4">
+          <p className="text-xs font-medium text-muted-foreground">הערות</p>
+          <p className="mt-1 text-sm">{defaults.notes}</p>
+        </div>
+      ) : null}
+
+      <div className="rounded-xl border border-dashed bg-muted/15 p-4 text-xs text-muted-foreground">
+        <p>
+          <span className="font-medium text-foreground">תוכנית: </span>
+          {defaults.plan ?? "—"}
+        </p>
+        <p className="mt-1">
+          <span className="font-medium text-foreground">סטטוס: </span>
+          {defaults.is_active !== false ? "פעיל" : "לא פעיל"}
+        </p>
+        <p className="mt-1 font-mono">מזהה: {defaults.id}</p>
+        <p className="mt-2">
+          נוצר:{" "}
+          {defaults.created_at
+            ? new Date(defaults.created_at).toLocaleString("he-IL")
+            : "—"}
+        </p>
+        <p className="mt-3 text-[11px]">
+          שינוי תוכנית או סטטוס פעילות — דרך מנהל-על בלבד.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ManagerBusinessEditForm({
+  tenantId,
+  defaults,
+  logoUrl,
+  onLogoUrlChange,
+  onSaved,
+  onCancel,
+}: {
+  tenantId: string;
+  defaults: BusinessDefaults;
+  logoUrl: string;
+  onLogoUrlChange: (url: string) => void;
+  onSaved: () => void;
+  onCancel: () => void;
 }) {
   const [state, formAction] = useFormState<
     ManagerBusinessActionState | undefined,
     FormData
   >(updateManagerBusinessAction, undefined);
 
+  useEffect(() => {
+    if (state?.ok) onSaved();
+  }, [state, onSaved]);
+
   return (
-    <form action={formAction} className="grid gap-4">
+    <form action={formAction} className="grid gap-6">
+      <input type="hidden" name="logo_url" value={logoUrl} />
+
       {state?.ok === false ? (
         <p className="text-sm text-destructive">{state.error}</p>
       ) : null}
       {state?.ok ? (
-        <p className="text-sm text-green-700">פרטי העסק נשמרו.</p>
+        <p className="text-sm text-green-700">נשמר בהצלחה.</p>
       ) : null}
+
+      <BusinessLogoUpload
+        tenantId={tenantId}
+        logoUrl={logoUrl}
+        onLogoUrlChange={onLogoUrlChange}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2 sm:col-span-2">
@@ -109,22 +292,12 @@ function ManagerBusinessForm({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="bp-cp">טלפון קווי</Label>
+          <Label htmlFor="bp-cp">טלפון</Label>
           <Input
             id="bp-cp"
             name="contact_phone"
             type="tel"
             defaultValue={defaults.contact_phone ?? ""}
-            dir="ltr"
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="bp-mobile">פלאפון (עסק)</Label>
-          <Input
-            id="bp-mobile"
-            name="business_mobile_phone"
-            type="tel"
-            defaultValue={defaults.mobile_phone ?? ""}
             dir="ltr"
           />
         </div>
@@ -139,16 +312,6 @@ function ManagerBusinessForm({
           />
         </div>
         <div className="grid gap-2 sm:col-span-2">
-          <Label htmlFor="bp-logo">כתובת לוגו (URL)</Label>
-          <Input
-            id="bp-logo"
-            name="logo_url"
-            type="url"
-            defaultValue={defaults.logo_url ?? ""}
-            dir="ltr"
-          />
-        </div>
-        <div className="grid gap-2 sm:col-span-2">
           <Label htmlFor="bp-notes">הערות פנימיות</Label>
           <Input
             id="bp-notes"
@@ -158,31 +321,40 @@ function ManagerBusinessForm({
         </div>
       </div>
 
-      <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-        <p>
-          <span className="font-medium text-foreground">תוכנית: </span>
-          {defaults.plan ?? "—"}
-        </p>
-        <p>
-          <span className="font-medium text-foreground">סטטוס פעילות: </span>
-          {defaults.is_active !== false ? "פעיל" : "לא פעיל"}
-        </p>
-        <p className="font-mono text-xs">
-          מזהה עסק: {defaults.id}
-        </p>
-        <p className="text-xs">
-          נוצר:{" "}
-          {defaults.created_at
-            ? new Date(defaults.created_at).toLocaleString("he-IL")
-            : "—"}
-        </p>
-        <p className="mt-2 text-xs">
-          שינוי תוכנית או סטטוס פעילות מתבצע דרך מנהל-על בלבד.
-        </p>
+      <div className="flex flex-wrap gap-2 border-t pt-4">
+        <SubmitButton label="שמור פרטי עסק" />
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          ביטול
+        </Button>
       </div>
-
-      <SubmitButton label="שמור פרטי עסק" />
     </form>
+  );
+}
+
+function ManagerProfileView({ defaults }: { defaults: ProfileDefaults }) {
+  return (
+    <div className="grid gap-4 text-sm sm:grid-cols-2">
+      <Field label="שם מלא">{defaults.full_name || "—"}</Field>
+      <Field label="פלאפון">
+        {defaults.phone?.trim() ? defaults.phone : "—"}
+      </Field>
+    </div>
+  );
+}
+
+function ManagerAuthView({ email }: { email: string }) {
+  const em = email.trim();
+  return (
+    <div className="space-y-3 text-sm">
+      <Field label="אימייל כניסה">
+        <span dir="ltr" className="inline-block font-mono text-xs">
+          {em || "—"}
+        </span>
+      </Field>
+      <p className="text-xs text-muted-foreground">
+        לשינוי סיסמה או אימייל — היכנס למצב עריכה ובחר &quot;עדכן אימייל / סיסמה&quot;.
+      </p>
+    </div>
   );
 }
 
@@ -201,8 +373,8 @@ function ManagerUserRowForm({ defaults }: { defaults: ProfileDefaults }) {
         <p className="text-sm text-green-700">פרטי המשתמש נשמרו.</p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="grid gap-2 sm:col-span-2">
+      <div className="grid gap-4">
+        <div className="grid gap-2">
           <Label htmlFor="pf-name">שם מלא</Label>
           <Input
             id="pf-name"
@@ -213,7 +385,7 @@ function ManagerUserRowForm({ defaults }: { defaults: ProfileDefaults }) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="pf-phone">טלפון</Label>
+          <Label htmlFor="pf-phone">פלאפון</Label>
           <Input
             id="pf-phone"
             name="phone"
@@ -223,21 +395,83 @@ function ManagerUserRowForm({ defaults }: { defaults: ProfileDefaults }) {
             dir="ltr"
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="pf-mobile">פלאפון</Label>
-          <Input
-            id="pf-mobile"
-            name="mobile_phone"
-            type="tel"
-            defaultValue={defaults.mobile_phone ?? ""}
-            autoComplete="tel"
-            dir="ltr"
-          />
-        </div>
       </div>
 
       <SubmitButton label="שמור פרטי פרופיל" />
     </form>
+  );
+}
+
+function ManagerAccountSection({
+  profile,
+  authEmail,
+}: {
+  profile: ProfileDefaults;
+  authEmail: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+
+  const openEdit = useCallback(() => {
+    setFormKey((k) => k + 1);
+    setEditing(true);
+  }, []);
+
+  const backToView = useCallback(() => {
+    setEditing(false);
+    setFormKey((k) => k + 1);
+  }, []);
+
+  return (
+    <Card className="overflow-hidden border-border/80 shadow-sm">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 border-b bg-muted/20 pb-4">
+        <div className="space-y-1">
+          <CardTitle className="text-xl">פרטי משתמש</CardTitle>
+          <CardDescription>
+            שם ופלאפון בטבלת profiles. פרטי הכניסה מופיעים למטה.
+          </CardDescription>
+        </div>
+        {!editing ? (
+          <Button type="button" variant="outline" size="sm" onClick={openEdit}>
+            עריכה
+          </Button>
+        ) : (
+          <Button type="button" variant="secondary" size="sm" onClick={backToView}>
+            חזרה לצפייה
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="pt-6">
+        {!editing ? (
+          <>
+            <ManagerProfileView defaults={profile} />
+            <div className="mt-6 rounded-xl border bg-muted/25 p-4 shadow-inner">
+              <p className="mb-3 text-sm font-medium">כניסה (אימייל וסיסמה)</p>
+              <p className="mb-4 text-xs text-muted-foreground">
+                עדכון חשבון Supabase — משפיע על ההתחברות לכל האפליקציות.
+              </p>
+              <ManagerAuthView email={authEmail} />
+            </div>
+          </>
+        ) : (
+          <div className="space-y-8">
+            <div>
+              <p className="mb-3 text-sm font-medium text-foreground">
+                פרטי פרופיל
+              </p>
+              <ManagerUserRowForm key={`pf-${formKey}`} defaults={profile} />
+            </div>
+            <div className="rounded-xl border bg-muted/25 p-4 shadow-inner">
+              <p className="mb-1 text-sm font-medium">כניסה (אימייל וסיסמה)</p>
+              <p className="mb-4 text-xs text-muted-foreground">
+                עדכון חשבון Supabase — משפיע על ההתחברות לכל האפליקציות.
+              </p>
+              <ManagerAuthSection initialEmail={authEmail} />
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -362,51 +596,20 @@ function ManagerAuthSection({
 }
 
 export function ManagerProfileForms({
+  tenantId,
   business,
   profile,
   authEmail,
 }: {
+  tenantId: string;
   business: BusinessDefaults;
   profile: ProfileDefaults;
   authEmail: string;
 }) {
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>פרטי עסק</CardTitle>
-          <CardDescription>
-            נשמרים בטבלת business_profiles עבור הארגון שלך.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ManagerBusinessForm defaults={business} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>פרטי משתמש (פרופיל)</CardTitle>
-          <CardDescription>
-            נשמרים בטבלת profiles — שם וטלפונים.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ManagerUserRowForm defaults={profile} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>כניסה (אימייל וסיסמה)</CardTitle>
-          <CardDescription>
-            עדכון חשבון Supabase — משפיע על ההתחברות לכל האפליקציות.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ManagerAuthSection initialEmail={authEmail} />
-        </CardContent>
-      </Card>
+    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+      <ManagerAccountSection profile={profile} authEmail={authEmail} />
+      <ManagerBusinessSection tenantId={tenantId} defaults={business} />
     </div>
   );
 }

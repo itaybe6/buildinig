@@ -43,7 +43,6 @@ export async function updateManagerBusinessAction(
     contact_phone: String(formData.get("contact_phone") ?? "").trim() || null,
     legal_name: String(formData.get("legal_name") ?? "").trim() || null,
     tax_id: String(formData.get("tax_id") ?? "").trim() || null,
-    mobile_phone: String(formData.get("business_mobile_phone") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
   });
 
@@ -54,6 +53,7 @@ export async function updateManagerBusinessAction(
   revalidatePath("/profile");
   revalidatePath("/dashboard");
   revalidatePath("/settings/tenant");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -76,15 +76,10 @@ export async function updateManagerUserProfileAction(
     return { ok: false, error: "חובה למלא שם מלא." };
   }
 
-  const result = await persistManagerOwnProfileRow(
-    auth.profileId,
-    auth.userId,
-    {
-      full_name,
-      phone: String(formData.get("phone") ?? "").trim() || null,
-      mobile_phone: String(formData.get("mobile_phone") ?? "").trim() || null,
-    }
-  );
+  const result = await persistManagerOwnProfileRow(auth.profileId, auth.userId, {
+    full_name,
+    phone: String(formData.get("phone") ?? "").trim() || null,
+  });
 
   if (!result.ok) {
     return { ok: false, error: result.error };
@@ -92,5 +87,6 @@ export async function updateManagerUserProfileAction(
 
   revalidatePath("/profile");
   revalidatePath("/dashboard");
+  revalidatePath("/", "layout");
   return { ok: true };
 }

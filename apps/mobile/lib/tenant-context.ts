@@ -1,3 +1,8 @@
+import {
+  businessProfileIdFromJwtAppMetadata,
+  inferBusinessProfileIdFromProfileLinks,
+} from "@my-project/shared";
+
 import { supabase as defaultClient, tryGetBusinessId } from "./supabase";
 
 export type TenantScope = {
@@ -12,18 +17,33 @@ export async function resolveTenantScopeForUser(
 ): Promise<TenantScope> {
   const { data: profile } = await client
     .from("profiles")
-    .select("tenant_id, business_profile_id")
+    .select("business_profile_id, building_id, unit_id")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
-  let tenantId = profile?.tenant_id ?? null;
-  let businessProfileId = profile?.business_profile_id ?? null;
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  const jwtBiz =
+    user?.id === authUserId
+      ? businessProfileIdFromJwtAppMetadata(user.app_metadata)
+      : null;
+
+  let businessProfileId =
+    profile?.business_profile_id ?? jwtBiz ?? null;
+  if (!businessProfileId && profile) {
+    businessProfileId = await inferBusinessProfileIdFromProfileLinks(
+      client,
+      profile
+    );
+  }
+
+  let tenantId = businessProfileId;
 
   if (!tenantId) {
     tenantId = tryGetBusinessId();
   }
 
-  // `profiles.tenant_id` is the business profile id (FK → `business_profiles.id`).
   if (tenantId && !businessProfileId) {
     businessProfileId = tenantId;
   }

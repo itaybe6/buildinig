@@ -12,14 +12,12 @@ export type ManagerBusinessPatch = {
   contact_phone: string | null;
   legal_name: string | null;
   tax_id: string | null;
-  mobile_phone: string | null;
   notes: string | null;
 };
 
 export type ManagerProfileRowPatch = {
   full_name: string;
   phone: string | null;
-  mobile_phone: string | null;
 };
 
 export async function persistManagerBusinessProfile(
@@ -45,7 +43,6 @@ export async function persistManagerBusinessProfile(
     contact_phone: input.contact_phone?.trim() || null,
     legal_name: input.legal_name?.trim() || null,
     tax_id: input.tax_id?.trim() || null,
-    mobile_phone: input.mobile_phone?.trim() || null,
     notes: input.notes?.trim() || null,
     updated_at: now,
   };
@@ -94,7 +91,6 @@ export async function persistManagerOwnProfileRow(
   const patch: ProfUpdate = {
     full_name: input.full_name.trim(),
     phone: input.phone?.trim() || null,
-    mobile_phone: input.mobile_phone?.trim() || null,
   };
 
   const { error } = await admin

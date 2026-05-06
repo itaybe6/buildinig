@@ -60,7 +60,6 @@ export async function PATCH(req: Request) {
       contact_phone: String(b.contact_phone ?? "").trim() || null,
       legal_name: String(b.legal_name ?? "").trim() || null,
       tax_id: String(b.tax_id ?? "").trim() || null,
-      mobile_phone: String(b.mobile_phone ?? "").trim() || null,
       notes: String(b.notes ?? "").trim() || null,
     });
 
@@ -90,7 +89,6 @@ export async function PATCH(req: Request) {
       {
         full_name,
         phone: String(p.phone ?? "").trim() || null,
-        mobile_phone: String(p.mobile_phone ?? "").trim() || null,
       }
     );
 

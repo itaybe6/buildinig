@@ -48,15 +48,15 @@ export default function SuperAdminTenantsScreen() {
 
     const { data: managers, error: me } = await supabase
       .from("profiles")
-      .select("tenant_id, full_name")
+      .select("business_profile_id, full_name")
       .eq("role", "manager")
-      .not("tenant_id", "is", null);
+      .not("business_profile_id", "is", null);
 
     const { data: orphanList, error: oe } = await supabase
       .from("profiles")
       .select("id, full_name, phone, created_at")
       .eq("role", "manager")
-      .is("tenant_id", null)
+      .is("business_profile_id", null)
       .order("created_at", { ascending: false });
 
     setLoading(false);
@@ -68,10 +68,11 @@ export default function SuperAdminTenantsScreen() {
 
     const map = new Map<string, string[]>();
     for (const m of managers ?? []) {
-      if (!m.tenant_id) continue;
-      const list = map.get(m.tenant_id) ?? [];
-      list.push(m.full_name);
-      map.set(m.tenant_id, list);
+      const bid = (m as { business_profile_id?: string | null }).business_profile_id;
+      if (!bid) continue;
+      const list = map.get(bid) ?? [];
+      list.push((m as { full_name: string }).full_name);
+      map.set(bid, list);
     }
 
     setRows(
@@ -96,7 +97,7 @@ export default function SuperAdminTenantsScreen() {
       <Text className="mb-2 px-1 text-base text-gray-700">
         כל עסק הוא רשומת{" "}
         <Text className="font-mono text-xs">business_profiles</Text>. מנהל צריך{" "}
-        <Text className="font-mono text-xs">tenant_id</Text> לאותו מזהה.
+        <Text className="font-mono text-xs">business_profile_id</Text> לאותו מזהה.
       </Text>
 
       <View className="px-1">

@@ -45,8 +45,7 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
       is_active,
       created_at,
       legal_name,
-      tax_id,
-      mobile_phone
+      tax_id
     `
     )
     .eq("id", params.id)
@@ -69,8 +68,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
     tenant as Database["public"]["Tables"]["business_profiles"]["Row"];
   const legalName = tenantRow.legal_name;
   const taxId = tenantRow.tax_id;
-  const businessMobile = tenantRow.mobile_phone;
-
   const [
     managersRes,
     buildingsListRes,
@@ -82,35 +79,35 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, phone, mobile_phone, is_active")
+      .select("id, full_name, phone, is_active")
       .eq("role", "manager")
-      .eq("tenant_id", params.id)
+      .eq("business_profile_id", params.id)
       .order("full_name"),
     supabase
       .from("buildings")
       .select("id, address, city, floors_count, is_active, created_at")
-      .eq("tenant_id", params.id)
+      .eq("business_profile_id", params.id)
       .order("address"),
     supabase
       .from("buildings")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", params.id),
+      .eq("business_profile_id", params.id),
     supabase
       .from("units")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", params.id),
+      .eq("business_profile_id", params.id),
     supabase
       .from("units")
       .select("building_id, unit_number")
-      .eq("tenant_id", params.id),
+      .eq("business_profile_id", params.id),
     supabase
       .from("service_requests")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", params.id),
+      .eq("business_profile_id", params.id),
     supabase
       .from("service_requests")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", params.id)
+      .eq("business_profile_id", params.id)
       .in("status", ["open", "assigned", "in_progress"]),
   ]);
 
@@ -185,12 +182,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
               {tenantRow.contact_phone ?? "—"}
             </p>
             <p>
-              <span className="text-muted-foreground">
-                פלאפון (פרופיל עסק):{" "}
-              </span>
-              {businessMobile ?? "—"}
-            </p>
-            <p>
               <span className="text-muted-foreground">שם משפטי: </span>
               {legalName ?? "—"}
             </p>
@@ -219,7 +210,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
                 contact_phone: tenantRow.contact_phone,
                 legal_name: legalName,
                 tax_id: taxId,
-                business_mobile_phone: businessMobile,
                 plan: tenantRow.plan,
                 is_active: tenantRow.is_active,
               }}
@@ -230,7 +220,9 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">מנהלים משויכים</CardTitle>
-            <CardDescription>משתמשים עם role מנהל ו־ tenant_id זה</CardDescription>
+            <CardDescription>
+              משתמשים עם role מנהל ו־ business_profile_id זה
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {managersError ? (
@@ -246,12 +238,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
                       <span className="text-muted-foreground">
                         {" "}
                         — {m.phone}
-                      </span>
-                    ) : null}
-                    {m.mobile_phone ? (
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · פלאפון {m.mobile_phone}
                       </span>
                     ) : null}
                     {m.is_active === false ? (

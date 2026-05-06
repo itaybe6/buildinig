@@ -173,7 +173,17 @@ function buildConfig({ config }) {
     web: {
       favicon: faviconPath,
     },
-    plugins: ["expo-router", ...((appOverrides.extraPlugins) || [])],
+    plugins: [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "האפליקציה צריכה גישה לגלריה כדי להעלות את לוגו העסק.",
+        },
+      ],
+      ...(appOverrides.extraPlugins || []),
+    ],
     extra: {
       ...baseExtra,
       CLIENT: client,
@@ -181,6 +191,7 @@ function buildConfig({ config }) {
         process.env.BUSINESS_ID || process.env.EXPO_PUBLIC_BUSINESS_ID || "",
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
+      EXPO_PUBLIC_WEB_API_ORIGIN: process.env.EXPO_PUBLIC_WEB_API_ORIGIN ?? "",
       theme,
     },
   };

@@ -45,7 +45,7 @@ export default function SuperAdminNewTenantScreen() {
             אחרי יצירת הלקוח תועברו לשלב הבא: הוספת בניינים. שיוך מנהל לעסק
             (דרך{" "}
             <Text className="font-mono text-xs text-slate-700">
-              profiles.tenant_id
+              profiles.business_profile_id
             </Text>
             ) אפשר לבצע בנפרד.
           </Text>

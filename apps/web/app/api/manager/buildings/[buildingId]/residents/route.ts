@@ -32,6 +32,7 @@ export async function POST(
     email?: string;
     password?: string;
     phone?: string;
+    unit_id?: string;
   };
   try {
     body = (await req.json()) as typeof body;
@@ -42,14 +43,16 @@ export async function POST(
     );
   }
 
+  const unitId = body.unit_id ? String(body.unit_id).trim() : undefined;
+
   const result = await inviteResidentToBuilding({
-    tenantId: scope.tenantId,
     businessProfileId: scope.businessProfileId,
     buildingId,
     fullName: String(body.full_name ?? ""),
     email: String(body.email ?? ""),
     password: String(body.password ?? ""),
     phone: body.phone ? String(body.phone) : undefined,
+    unitId: unitId || undefined,
   });
 
   if (!result.ok) {

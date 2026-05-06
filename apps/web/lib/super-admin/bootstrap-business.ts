@@ -100,7 +100,6 @@ export async function bootstrapBusiness(
 
   const { error: pe } = await admin.from("profiles").insert({
     auth_user_id: authData.user.id,
-    tenant_id: bp.id,
     business_profile_id: bp.id,
     full_name: managerFullName,
     phone: managerPhone || null,

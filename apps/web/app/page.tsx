@@ -23,6 +23,12 @@ export default async function HomePage() {
   if (role === "super_admin") {
     redirect("/super-admin/dashboard");
   }
+  if (role === "resident") {
+    redirect("/home");
+  }
+  if (role === "employee") {
+    redirect("/assignments");
+  }
 
   redirect("/dashboard");
 }

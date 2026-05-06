@@ -7,9 +7,16 @@ export type NavItem = {
   roles?: UserRole[];
 };
 
+export type NavGroup = {
+  /** כותרת קבוצה בסרגל — לדוגמה «תושב» / «עובד» כמו חלוקת התיקיות במובייל */
+  title: string | null;
+  items: NavItem[];
+};
+
 export const MANAGER_NAV: NavItem[] = [
   { href: "/dashboard", label: "לוח בקרה" },
   { href: "/buildings", label: "בניינים" },
+  { href: "/residents", label: "דיירים" },
   { href: "/employees", label: "עובדים" },
   { href: "/service-requests", label: "קריאות שירות" },
   { href: "/service-types", label: "סוגי שירות" },
@@ -26,24 +33,42 @@ export const SUPER_ADMIN_NAV: NavItem[] = [
   { href: "/super-admin/tenants", label: "לקוחות (מנהלים)" },
 ];
 
-export const EMPLOYEE_WEB_NAV: NavItem[] = [
-  { href: "/dashboard", label: "לוח בקרה" },
-  { href: "/service-requests", label: "קריאות שירות" },
-  { href: "/buildings", label: "בניינים" },
+/** עמודי תושב — מקביל ל־(resident) במובייל (נתיבים נפרדים מממשק המנהל) */
+export const RESIDENT_NAV: NavItem[] = [
+  { href: "/home", label: "בית" },
+  { href: "/requests", label: "קריאות" },
+  { href: "/quotes", label: "הצעות" },
+  { href: "/resident-payments", label: "תשלומים" },
+  { href: "/resident-announcements", label: "מודעות" },
+];
+
+/** עמודי עובד — מקביל ל־(employee) במובייל */
+export const EMPLOYEE_NAV: NavItem[] = [
+  { href: "/assignments", label: "המשימות שלי" },
+  { href: "/all-requests", label: "כל הקריאות" },
 ];
 
 export function getSidebarSections(role: UserRole): {
-  primary: NavItem[];
+  groups: NavGroup[];
   admin?: NavItem[];
 } {
   if (role === "super_admin") {
-    return { primary: SUPER_ADMIN_NAV };
+    return { groups: [{ title: null, items: SUPER_ADMIN_NAV }] };
   }
   if (role === "manager") {
-    return { primary: MANAGER_NAV };
+    return {
+      groups: [{ title: null, items: MANAGER_NAV }],
+    };
   }
   if (role === "employee") {
-    return { primary: EMPLOYEE_WEB_NAV };
+    return {
+      groups: [{ title: "עובד", items: EMPLOYEE_NAV }],
+    };
   }
-  return { primary: [] };
+  if (role === "resident") {
+    return {
+      groups: [{ title: "תושב", items: RESIDENT_NAV }],
+    };
+  }
+  return { groups: [] };
 }

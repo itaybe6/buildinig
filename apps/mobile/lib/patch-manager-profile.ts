@@ -9,14 +9,12 @@ export type ManagerBusinessApiPayload = {
   contact_phone?: string | null;
   legal_name?: string | null;
   tax_id?: string | null;
-  mobile_phone?: string | null;
   notes?: string | null;
 };
 
 export type ManagerProfileApiPayload = {
   full_name: string;
   phone?: string | null;
-  mobile_phone?: string | null;
 };
 
 export async function patchManagerBusinessViaWebApi(

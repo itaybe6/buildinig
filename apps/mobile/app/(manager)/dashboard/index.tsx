@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   Text,
@@ -30,6 +31,8 @@ export default function ManagerDashboardScreen() {
   const [unitCountByBuilding, setUnitCountByBuilding] = useState<
     Record<string, number>
   >({});
+  const [brandName, setBrandName] = useState<string | null>(null);
+  const [brandLogoUrl, setBrandLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +68,12 @@ export default function ManagerDashboardScreen() {
           setErr(buildingList.error.message);
           return;
         }
+
+        const { data: brandInfo } = await supabase
+          .from("business_profiles")
+          .select("name, logo_url")
+          .eq("id", businessProfileId)
+          .maybeSingle();
 
         const buildingRows = (buildingList.data ?? []) as BuildingRow[];
         const buildingIds = buildingRows.map((b) => b.id);
@@ -108,6 +117,8 @@ export default function ManagerDashboardScreen() {
         );
 
         if (!cancelled) {
+          setBrandName(brandInfo?.name ?? null);
+          setBrandLogoUrl(brandInfo?.logo_url ?? null);
           setBuildings(buildingRows);
           setUnitCountByBuilding(unitCounts);
           setTiles([
@@ -162,6 +173,32 @@ export default function ManagerDashboardScreen() {
 
   return (
     <ScrollView className="flex-1 bg-white px-4 pt-4">
+      {brandName ? (
+        <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <View className="h-14 w-14 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
+            {brandLogoUrl ? (
+              <Image
+                source={{ uri: brandLogoUrl }}
+                className="h-full w-full"
+                resizeMode="contain"
+              />
+            ) : (
+              <View className="h-full w-full items-center justify-center">
+                <Text className="text-[10px] text-gray-400">לוגו</Text>
+              </View>
+            )}
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text
+              className="text-lg font-bold text-slate-900"
+              numberOfLines={2}
+            >
+              {brandName}
+            </Text>
+            <Text className="text-xs text-gray-600">הארגון שלך</Text>
+          </View>
+        </View>
+      ) : null}
       <Text className="mb-1 text-2xl font-bold">לוח בקרה</Text>
       <Text className="mb-6 text-sm text-gray-600">
         סיכום מהיר — לפי הארגון שלך.

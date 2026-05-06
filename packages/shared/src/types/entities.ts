@@ -2,7 +2,7 @@ import type { Database } from "@my-project/supabase";
 
 export type BusinessProfile =
   Database["public"]["Tables"]["business_profiles"]["Row"];
-/** ארגון אצלנו = שורה ב־`business_profiles` (מזהה ב־`profiles.tenant_id`). */
+/** ארגון אצלנו = שורה ב־`business_profiles` (מזהה ב־`profiles.business_profile_id`). */
 export type Tenant = BusinessProfile;
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Building = Database["public"]["Tables"]["buildings"]["Row"];

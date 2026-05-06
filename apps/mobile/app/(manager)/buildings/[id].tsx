@@ -1,4 +1,8 @@
 import { inviteResidentToBuildingViaWebApi } from "@/lib/invite-building-resident";
+import {
+  linkResidentToUnitViaWebApi,
+  postBuildingUnitsViaWebApi,
+} from "@/lib/manager-building-units-api";
 import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 import { useLocalSearchParams } from "expo-router";
@@ -6,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -26,7 +31,21 @@ type UnitRow = {
   unit_number: string;
   floor_number: number | null;
   monthly_fee: string | null;
+  type: string | null;
+  resident: {
+    id: string;
+    full_name: string;
+    phone: string | null;
+  } | null;
 };
+
+type EligibleProfile = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+};
+
+type DraftRow = { unit_number: string; floor: string };
 
 export default function ManagerBuildingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,6 +55,20 @@ export default function ManagerBuildingDetailScreen() {
   const [city, setCity] = useState("");
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [units, setUnits] = useState<UnitRow[]>([]);
+  const [eligibleProfiles, setEligibleProfiles] = useState<EligibleProfile[]>(
+    []
+  );
+
+  const [unitRows, setUnitRows] = useState<DraftRow[]>([
+    { unit_number: "", floor: "" },
+  ]);
+  const [savingUnits, setSavingUnits] = useState(false);
+
+  const [linkUnit, setLinkUnit] = useState<UnitRow | null>(null);
+  const [linking, setLinking] = useState(false);
+
+  const [inviteForUnitId, setInviteForUnitId] = useState<string | null>(null);
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -82,12 +115,27 @@ export default function ManagerBuildingDetailScreen() {
       .eq("building_id", bid)
       .order("full_name");
 
-    const { data: unitsData, error: uErr } = await supabase
+    const { data: unitsRaw, error: uErr } = await supabase
       .from("units")
-      .select("id, unit_number, floor_number, monthly_fee")
+      .select("id, unit_number, floor_number, monthly_fee, type")
       .eq("building_id", bid)
       .eq("business_profile_id", businessProfileId)
       .order("unit_number");
+
+    const { data: unitResidents, error: urErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone, unit_id")
+      .eq("business_profile_id", businessProfileId)
+      .eq("building_id", bid)
+      .not("unit_id", "is", null);
+
+    const { data: eligibleRaw, error: eErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone")
+      .eq("business_profile_id", businessProfileId)
+      .eq("role", "resident")
+      .is("unit_id", null)
+      .or(`building_id.is.null,building_id.eq.${bid}`);
 
     setLoading(false);
 
@@ -103,16 +151,100 @@ export default function ManagerBuildingDetailScreen() {
       setErr(uErr.message);
       return;
     }
+    if (urErr) {
+      setErr(urErr.message);
+      return;
+    }
+    if (eErr) {
+      setErr(eErr.message);
+      return;
+    }
+
+    const residentByUnitId = new Map(
+      (unitResidents ?? []).map((r) => [r.unit_id as string, r])
+    );
+
+    const merged: UnitRow[] = (unitsRaw ?? []).map((u) => {
+      const r = residentByUnitId.get(u.id);
+      return {
+        ...u,
+        resident: r
+          ? { id: r.id, full_name: r.full_name, phone: r.phone }
+          : null,
+      };
+    });
 
     setAddress(building.address ?? "");
     setCity(building.city ?? "");
     setProfiles((profs ?? []) as ProfileRow[]);
-    setUnits((unitsData ?? []) as UnitRow[]);
+    setUnits(merged);
+    setEligibleProfiles((eligibleRaw ?? []) as EligibleProfile[]);
   }, [id]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function onSaveUnits() {
+    if (!id) return;
+    const bid = Array.isArray(id) ? id[0] : id;
+    const parsed = unitRows
+      .map((r) => ({
+        unit_number: r.unit_number.trim(),
+        floor_number:
+          r.floor.trim() === "" ? null : Number.parseInt(r.floor, 10),
+      }))
+      .filter((r) => r.unit_number.length > 0);
+
+    if (!parsed.length) {
+      Alert.alert("שגיאה", "הוסיפו לפחות דירה אחת.");
+      return;
+    }
+
+    for (const p of parsed) {
+      if (
+        p.floor_number !== null &&
+        (Number.isNaN(p.floor_number) || p.floor_number < 0)
+      ) {
+        Alert.alert("שגיאה", "מספר קומה חייב להיות מספר תקין.");
+        return;
+      }
+    }
+
+    setSavingUnits(true);
+    const result = await postBuildingUnitsViaWebApi(bid, parsed);
+    setSavingUnits(false);
+
+    if (!result.ok) {
+      Alert.alert("שגיאה", result.error);
+      return;
+    }
+
+    setUnitRows([{ unit_number: "", floor: "" }]);
+    void load();
+    Alert.alert("הצלחה", "הדירות נשמרו.");
+  }
+
+  async function onLinkExisting(profileId: string) {
+    if (!id || !linkUnit) return;
+    const bid = Array.isArray(id) ? id[0] : id;
+    setLinking(true);
+    const result = await linkResidentToUnitViaWebApi(
+      bid,
+      linkUnit.id,
+      profileId
+    );
+    setLinking(false);
+
+    if (!result.ok) {
+      Alert.alert("שגיאה", result.error);
+      return;
+    }
+
+    setLinkUnit(null);
+    void load();
+    Alert.alert("הצלחה", "הדייר שויך לדירה.");
+  }
 
   async function onInvite() {
     if (!id) return;
@@ -123,6 +255,7 @@ export default function ManagerBuildingDetailScreen() {
       email: email.trim(),
       password,
       phone: phone.trim() || undefined,
+      unit_id: inviteForUnitId ?? undefined,
     });
     setSaving(false);
     if (!result.ok) {
@@ -133,6 +266,7 @@ export default function ManagerBuildingDetailScreen() {
     setEmail("");
     setPassword("");
     setPhone("");
+    setInviteForUnitId(null);
     void load();
     Alert.alert("הצלחה", "המשתמש נוצר ושויך לבניין.");
   }
@@ -154,108 +288,271 @@ export default function ManagerBuildingDetailScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white px-4 pt-4">
-      <Text className="mb-1 text-xl font-bold">
-        {address.trim() || "—"}
-      </Text>
-      <Text className="mb-6 text-sm text-gray-600">{city.trim() || "—"}</Text>
-
-      <Text className="mb-2 font-semibold text-slate-800">
-        משתמשים משויכים לבניין
-      </Text>
-      {profiles.length === 0 ? (
-        <Text className="mb-6 text-gray-500">
-          אין עדיין פרופילים עם שיוך לבניין זה.
+    <>
+      <ScrollView className="flex-1 bg-white px-4 pt-4">
+        <Text className="mb-1 text-xl font-bold">
+          {address.trim() || "—"}
         </Text>
-      ) : (
-        <View className="mb-6 gap-2">
-          {profiles.map((p) => (
-            <View
-              key={p.id}
-              className="rounded-lg border border-slate-200 px-3 py-2"
-            >
-              <Text className="font-medium">{p.full_name}</Text>
-              <Text className="text-sm text-gray-600">
-                {p.phone ?? "—"} · {p.role}
-                {p.is_active === false ? " · לא פעיל" : ""}
+        <Text className="mb-6 text-sm text-gray-600">{city.trim() || "—"}</Text>
+
+        <Text className="mb-2 font-semibold text-slate-800">הוספת דירות</Text>
+        <Text className="mb-3 text-sm text-gray-600">
+          ניתן להוסיף כמה דירות; לכל דירה ציינו מספר דירה וקומה.
+        </Text>
+        {unitRows.map((row, i) => (
+          <View key={i} className="mb-3 flex-row gap-2">
+            <TextInput
+              className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-left"
+              placeholder="מספר דירה"
+              value={row.unit_number}
+              onChangeText={(v) =>
+                setUnitRows((prev) =>
+                  prev.map((r, j) =>
+                    j === i ? { ...r, unit_number: v } : r
+                  )
+                )
+              }
+            />
+            <TextInput
+              className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-left"
+              placeholder="קומה"
+              keyboardType="number-pad"
+              value={row.floor}
+              onChangeText={(v) =>
+                setUnitRows((prev) =>
+                  prev.map((r, j) => (j === i ? { ...r, floor: v } : r))
+                )
+              }
+            />
+            {unitRows.length > 1 ? (
+              <Pressable
+                className="justify-center px-2"
+                onPress={() =>
+                  setUnitRows((prev) => prev.filter((_, j) => j !== i))
+                }
+              >
+                <Text className="text-red-600">✕</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ))}
+        <Pressable
+          className="mb-2 self-start rounded-lg border border-gray-300 px-3 py-2"
+          onPress={() =>
+            setUnitRows((prev) => [...prev, { unit_number: "", floor: "" }])
+          }
+        >
+          <Text className="text-sm font-medium text-slate-700">שורה נוספת</Text>
+        </Pressable>
+        <Pressable
+          className="mb-8 rounded-lg bg-slate-800 py-3 disabled:opacity-50"
+          disabled={savingUnits}
+          onPress={() => void onSaveUnits()}
+        >
+          <Text className="text-center font-semibold text-white">
+            {savingUnits ? "שומר…" : "שמירת דירות"}
+          </Text>
+        </Pressable>
+
+        <Text className="mb-2 font-semibold text-slate-800">דירות</Text>
+        {units.length === 0 ? (
+          <Text className="mb-6 text-gray-500">
+            אין דירות רשומות — הוסיפו למעלה.
+          </Text>
+        ) : (
+          <View className="mb-6 gap-2">
+            {units.map((u) => (
+              <View
+                key={u.id}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              >
+                <Text className="font-medium">דירה {u.unit_number}</Text>
+                {u.floor_number != null ? (
+                  <Text className="text-sm text-gray-600">
+                    קומה {u.floor_number}
+                  </Text>
+                ) : null}
+                {u.monthly_fee != null ? (
+                  <Text className="text-sm text-gray-600">
+                    דמי ניהול: {u.monthly_fee}
+                  </Text>
+                ) : null}
+                {u.resident ? (
+                  <Text className="mt-1 text-sm text-slate-700">
+                    דייר: {u.resident.full_name}
+                    {u.resident.phone ? ` · ${u.resident.phone}` : ""}
+                  </Text>
+                ) : (
+                  <Pressable
+                    className="mt-2 self-start rounded-md bg-blue-600 px-3 py-1.5"
+                    onPress={() => setLinkUnit(u)}
+                  >
+                    <Text className="text-sm font-semibold text-white">
+                      קישור ללקוח
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        <Text className="mb-2 font-semibold text-slate-800">
+          משתמשים משויכים לבניין
+        </Text>
+        {profiles.length === 0 ? (
+          <Text className="mb-6 text-gray-500">
+            אין עדיין פרופילים עם שיוך לבניין זה.
+          </Text>
+        ) : (
+          <View className="mb-6 gap-2">
+            {profiles.map((p) => (
+              <View
+                key={p.id}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              >
+                <Text className="font-medium">{p.full_name}</Text>
+                <Text className="text-sm text-gray-600">
+                  {p.phone ?? "—"} · {p.role}
+                  {p.is_active === false ? " · לא פעיל" : ""}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <Text className="mb-2 font-semibold text-slate-800">הוספת דייר</Text>
+        <Text className="mb-3 text-sm text-gray-600">
+          נדרש שרת Next עם SUPABASE_SERVICE_ROLE_KEY ו־EXPO_PUBLIC_WEB_APP_ORIGIN.
+        </Text>
+        {inviteForUnitId ? (
+          <View className="mb-3 rounded-lg bg-slate-100 px-3 py-2">
+            <Text className="text-sm text-slate-800">
+              הדייר החדש ישויך לדירה שנבחרה.
+            </Text>
+            <Pressable onPress={() => setInviteForUnitId(null)} className="mt-1">
+              <Text className="text-sm font-semibold text-blue-700">
+                ביטול קישור דירה
               </Text>
-            </View>
-          ))}
-        </View>
-      )}
+            </Pressable>
+          </View>
+        ) : null}
+        <TextInput
+          className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
+          placeholder="שם מלא"
+          value={fullName}
+          onChangeText={setFullName}
+        />
+        <TextInput
+          className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
+          placeholder="אימייל"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
+          placeholder="סיסמה ראשונית"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TextInput
+          className="mb-4 rounded-lg border border-gray-300 px-3 py-2 text-left"
+          placeholder="טלפון (אופציונלי)"
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+        />
+        <Pressable
+          className="mb-8 rounded-lg bg-blue-600 py-3 disabled:opacity-50"
+          disabled={
+            saving ||
+            !fullName.trim() ||
+            !email.trim() ||
+            password.length < 6
+          }
+          onPress={() => void onInvite()}
+        >
+          <Text className="text-center font-semibold text-white">
+            {saving ? "יוצר…" : "הוספת דייר"}
+          </Text>
+        </Pressable>
+      </ScrollView>
 
-      <Text className="mb-2 font-semibold text-slate-800">הוספת דייר</Text>
-      <Text className="mb-3 text-sm text-gray-600">
-        נדרש שרת Next עם SUPABASE_SERVICE_ROLE_KEY ו־EXPO_PUBLIC_WEB_APP_ORIGIN.
-      </Text>
-      <TextInput
-        className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
-        placeholder="שם מלא"
-        value={fullName}
-        onChangeText={setFullName}
-      />
-      <TextInput
-        className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
-        placeholder="אימייל"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
-        placeholder="סיסמה ראשונית"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TextInput
-        className="mb-4 rounded-lg border border-gray-300 px-3 py-2 text-left"
-        placeholder="טלפון (אופציונלי)"
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-      />
-      <Pressable
-        className="mb-8 rounded-lg bg-blue-600 py-3 disabled:opacity-50"
-        disabled={
-          saving ||
-          !fullName.trim() ||
-          !email.trim() ||
-          password.length < 6
-        }
-        onPress={() => void onInvite()}
+      <Modal
+        visible={linkUnit !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLinkUnit(null)}
       >
-        <Text className="text-center font-semibold text-white">
-          {saving ? "יוצר…" : "הוספת דייר"}
-        </Text>
-      </Pressable>
+        <Pressable
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => setLinkUnit(null)}
+        >
+          <Pressable
+            className="max-h-[70%] rounded-t-2xl bg-white p-4"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text className="mb-1 text-lg font-bold">
+              קישור דירה {linkUnit?.unit_number ?? ""}
+            </Text>
+            <Text className="mb-4 text-sm text-gray-600">
+              בחרו דייר קיים או צרו דייר חדש בטופס למטה.
+            </Text>
 
-      <Text className="mb-2 font-semibold text-slate-800">דירות</Text>
-      {units.length === 0 ? (
-        <Text className="pb-8 text-gray-500">אין דירות רשומות.</Text>
-      ) : (
-        <View className="gap-2 pb-8">
-          {units.map((u) => (
-            <View
-              key={u.id}
-              className="rounded-lg border border-slate-200 px-3 py-2"
+            {eligibleProfiles.length === 0 ? (
+              <Text className="mb-3 text-sm text-gray-500">
+                אין דיירים זמינים בלי דירה — השתמשו ב&quot;דייר חדש&quot;.
+              </Text>
+            ) : (
+              <ScrollView className="mb-4 max-h-48">
+                {eligibleProfiles.map((p) => (
+                  <Pressable
+                    key={p.id}
+                    className="border-b border-gray-100 py-3"
+                    disabled={linking}
+                    onPress={() => void onLinkExisting(p.id)}
+                  >
+                    <Text className="font-medium">{p.full_name}</Text>
+                    <Text className="text-sm text-gray-600">
+                      {p.phone ?? "—"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+
+            <Pressable
+              className="mb-2 rounded-lg bg-blue-600 py-3 disabled:opacity-50"
+              disabled={linking}
+              onPress={() => {
+                if (!linkUnit) return;
+                setInviteForUnitId(linkUnit.id);
+                setLinkUnit(null);
+                Alert.alert(
+                  "דייר חדש",
+                  "מלאו את טופס ההוספה למטה — הדייר ישויך לדירה שנבחרה."
+                );
+              }}
             >
-              <Text className="font-medium">דירה {u.unit_number}</Text>
-              {u.floor_number != null ? (
-                <Text className="text-sm text-gray-600">
-                  קומה {u.floor_number}
-                </Text>
-              ) : null}
-              {u.monthly_fee != null ? (
-                <Text className="text-sm text-gray-600">
-                  דמי ניהול: {u.monthly_fee}
-                </Text>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      )}
-    </ScrollView>
+              <Text className="text-center font-semibold text-white">
+                דייר חדש (טופס למטה)
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className="rounded-lg border border-gray-300 py-3"
+              onPress={() => setLinkUnit(null)}
+            >
+              <Text className="text-center font-medium text-slate-700">
+                סגירה
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }

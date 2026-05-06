@@ -8,6 +8,8 @@ export async function inviteResidentToBuildingViaWebApi(
     email: string;
     password: string;
     phone?: string;
+    /** קישור לדירה ספציפית בעת יצירת דייר */
+    unit_id?: string;
   }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const origin = webApiOrigin();
@@ -39,6 +41,7 @@ export async function inviteResidentToBuildingViaWebApi(
         email: input.email,
         password: input.password,
         phone: input.phone ?? "",
+        ...(input.unit_id ? { unit_id: input.unit_id } : {}),
       }),
     }
   );

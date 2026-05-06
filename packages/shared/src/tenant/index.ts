@@ -1,13 +1,15 @@
 // packages/shared/src/tenant/index.ts
 //
 // White-label multi-tenant helpers.
-//
-// In this codebase, every tenant-scoped table has a `tenant_id` column
-// (the "business_id" referred to in the white-label spec).
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@my-project/supabase";
+
+// Tenant scope uses `business_profile_id` (= FK → business_profiles.id).
 //
 // USAGE PATTERN (must apply in every query):
 //   import { withTenant } from "@my-project/shared";
-//   const rows = await withTenant(supabase.from("buildings").select("*"), tenantId);
+//   const rows = await withTenant(supabase.from("units").select("*"), tenantId);
 //
 // For inserts:
 //   import { insertWithTenant } from "@my-project/shared";
@@ -16,7 +18,7 @@
 // `business_profiles` rows use `id` as the tenant identifier — filter by `id`
 // when querying the current org row; do not pass that query through `withTenant`.
 
-export const TENANT_COLUMN = "tenant_id" as const;
+export const TENANT_COLUMN = "business_profile_id" as const;
 
 type Filterable<T> = {
   eq: (column: string, value: string) => T;
@@ -56,5 +58,48 @@ export function insertWithTenant<T>(
  * `business_profiles` is special-cased — its primary key IS the tenant id.
  */
 export function tenantFilterColumn(table: string): string {
-  return table === "business_profiles" ? "id" : TENANT_COLUMN;
+  if (table === "business_profiles") return "id";
+  return "business_profile_id";
+}
+
+/**
+ * Tenant id carried on the Supabase session JWT (`user.app_metadata`), synced from
+ * `profiles.business_profile_id` via DB trigger. Optional legacy key `BUSINESS_ID`.
+ */
+export function businessProfileIdFromJwtAppMetadata(
+  appMetadata: Record<string, unknown> | undefined | null
+): string | null {
+  if (!appMetadata) return null;
+  const v = appMetadata.business_profile_id ?? appMetadata.BUSINESS_ID;
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+/** When `profiles.business_profile_id` is null, derive tenant from linked building or unit. */
+export async function inferBusinessProfileIdFromProfileLinks(
+  client: SupabaseClient<Database>,
+  row: Pick<
+    Database["public"]["Tables"]["profiles"]["Row"],
+    "business_profile_id" | "building_id" | "unit_id"
+  >
+): Promise<string | null> {
+  if (row.business_profile_id) {
+    return row.business_profile_id;
+  }
+  if (row.building_id) {
+    const { data } = await client
+      .from("buildings")
+      .select("business_profile_id")
+      .eq("id", row.building_id)
+      .maybeSingle();
+    if (data?.business_profile_id) return data.business_profile_id;
+  }
+  if (row.unit_id) {
+    const { data } = await client
+      .from("units")
+      .select("business_profile_id")
+      .eq("id", row.unit_id)
+      .maybeSingle();
+    if (data?.business_profile_id) return data.business_profile_id;
+  }
+  return null;
 }

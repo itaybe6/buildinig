@@ -26,13 +26,13 @@ export default async function ManagerProfilePage() {
       supabase
         .from("business_profiles")
         .select(
-          "id, name, logo_url, primary_color, contact_email, contact_phone, legal_name, tax_id, mobile_phone, notes, plan, is_active, created_at"
+          "id, name, logo_url, primary_color, contact_email, contact_phone, legal_name, tax_id, notes, plan, is_active, created_at"
         )
         .eq("id", ctx.tenantId)
         .maybeSingle(),
       supabase
         .from("profiles")
-        .select("full_name, phone, mobile_phone")
+        .select("full_name, phone")
         .eq("id", auth.profileId)
         .maybeSingle(),
     ]);
@@ -53,7 +53,6 @@ export default async function ManagerProfilePage() {
   const profile = profileRow ?? {
     full_name: auth.fullName,
     phone: null as string | null,
-    mobile_phone: null as string | null,
   };
 
   return (
@@ -61,12 +60,13 @@ export default async function ManagerProfilePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">פרופיל</h1>
         <p className="text-sm text-muted-foreground">
-          עריכת פרטי העסק (business_profiles) והמשתמש שלך (profiles), כולל אימייל
-          וסיסמת כניסה.
+          צפייה בפרטים ועריכה לפי צורך — פרטי משתמש וכניסה, ואחריהם פרטי העסק
+          והלוגו.
         </p>
       </div>
 
       <ManagerProfileForms
+        tenantId={ctx.tenantId}
         business={{
           id: business.id,
           name: business.name,
@@ -76,7 +76,6 @@ export default async function ManagerProfilePage() {
           contact_phone: business.contact_phone,
           legal_name: business.legal_name,
           tax_id: business.tax_id,
-          mobile_phone: business.mobile_phone,
           notes: business.notes,
           plan: business.plan,
           is_active: business.is_active,
@@ -85,7 +84,6 @@ export default async function ManagerProfilePage() {
         profile={{
           full_name: profile.full_name,
           phone: profile.phone,
-          mobile_phone: profile.mobile_phone,
         }}
         authEmail={email}
       />

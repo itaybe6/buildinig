@@ -26,7 +26,7 @@ export function NoTenantNotice({
         <CardDescription>
           {noBusiness
             ? "לא נמצא רשומת business_profiles המקושרת לארגון שלך. צור עסק או סנכרן נתונים."
-            : "חסר מזהה ארגון בפרופיל או בקובץ הסביבה (BUSINESS_ID)."}
+            : "חסר מזהה ארגון בפרופיל, בטוקן ההתחברות או בקובץ הסביבה (BUSINESS_ID). ודא שב־profiles מוגדר business_profile_id או שיוך לבניין/יחידה."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm text-muted-foreground">
@@ -39,13 +39,14 @@ export function NoTenantNotice({
               </code>{" "}
               עם אותו{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                tenant_id
+                business_profile_id
               </code>{" "}
               כמו בארגון שלך.
             </>
           ) : (
             <>
-              נא לשייך משתמש לארגון ב-Supabase או להגדיר{" "}
+              נא לשייך משתמש לארגון ב-Supabase (שדה business_profile_id או building_id),
+              להריץ את מיגרציית ה-JWT אם עדיין לא, או להגדיר{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 BUSINESS_ID / NEXT_PUBLIC_BUSINESS_ID
               </code>{" "}
