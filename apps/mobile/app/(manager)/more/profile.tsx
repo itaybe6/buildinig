@@ -34,6 +34,7 @@ export default function ManagerProfileScreen() {
   const [bpColor, setBpColor] = useState("");
   const [bpLogo, setBpLogo] = useState("");
   const [bpNotes, setBpNotes] = useState("");
+  const [bpAbout, setBpAbout] = useState("");
   const [bpPlan, setBpPlan] = useState<string | null>(null);
   const [bpActive, setBpActive] = useState<boolean | null>(null);
 
@@ -106,7 +107,7 @@ export default function ManagerProfileScreen() {
       const { data: bp, error: bErr } = await supabase
         .from("business_profiles")
         .select(
-          "id, name, logo_url, primary_color, contact_email, contact_phone, legal_name, tax_id, notes, plan, is_active"
+          "id, name, logo_url, primary_color, contact_email, contact_phone, legal_name, tax_id, notes, about, plan, is_active"
         )
         .eq("id", tenantId)
         .maybeSingle();
@@ -125,6 +126,7 @@ export default function ManagerProfileScreen() {
       setBpColor(bp.primary_color ?? "");
       setBpLogo(bp.logo_url ?? "");
       setBpNotes(bp.notes ?? "");
+      setBpAbout(bp.about ?? "");
       setBpPlan(bp.plan);
       setBpActive(bp.is_active);
     } catch (e) {
@@ -167,6 +169,7 @@ export default function ManagerProfileScreen() {
       legal_name: bpLegal.trim() || null,
       tax_id: bpTax.trim() || null,
       notes: bpNotes.trim() || null,
+      about: bpAbout.trim() || null,
     });
     setSavingBusiness(false);
     if (!r.ok) {
@@ -434,6 +437,12 @@ export default function ManagerProfileScreen() {
                 <Text className="text-sm text-slate-800">{bpNotes}</Text>
               </View>
             ) : null}
+            <View>
+              <Text className="mb-1 text-xs text-gray-500">אודות העסק</Text>
+              <Text className="text-sm text-slate-800">
+                {bpAbout.trim() ? bpAbout : "—"}
+              </Text>
+            </View>
             <View className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-3">
               <Text className="text-xs text-gray-600">
                 תוכנית: {bpPlan ?? "—"}
@@ -506,6 +515,12 @@ export default function ManagerProfileScreen() {
               onChangeText={setBpColor}
             />
             <Field label="הערות" value={bpNotes} onChangeText={setBpNotes} />
+            <Field
+              label="אודות העסק"
+              value={bpAbout}
+              onChangeText={setBpAbout}
+              multiline
+            />
 
             <View className="mt-2 flex-row flex-wrap gap-2">
               <Pressable
@@ -561,6 +576,7 @@ function Field({
   keyboardType,
   autoCapitalize,
   secureTextEntry,
+  multiline,
 }: {
   label: string;
   value: string;
@@ -569,6 +585,7 @@ function Field({
   keyboardType?: "default" | "email-address" | "phone-pad";
   autoCapitalize?: "none" | "sentences";
   secureTextEntry?: boolean;
+  multiline?: boolean;
 }) {
   return (
     <View>
@@ -578,9 +595,12 @@ function Field({
         onChangeText={onChangeText}
         editable={editable}
         className={inputClass}
+        style={multiline ? { minHeight: 120, textAlignVertical: "top" } : undefined}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
+        multiline={multiline}
+        numberOfLines={multiline ? 5 : undefined}
       />
     </View>
   );

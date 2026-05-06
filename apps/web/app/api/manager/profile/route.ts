@@ -61,6 +61,7 @@ export async function PATCH(req: Request) {
       legal_name: String(b.legal_name ?? "").trim() || null,
       tax_id: String(b.tax_id ?? "").trim() || null,
       notes: String(b.notes ?? "").trim() || null,
+      about: String(b.about ?? "").trim() || null,
     });
 
     if (!result.ok) {

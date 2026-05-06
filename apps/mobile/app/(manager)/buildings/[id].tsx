@@ -5,8 +5,12 @@ import {
 } from "@/lib/manager-building-units-api";
 import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
+import {
+  analyzeBulkUnitNumberIssues,
+  validateAndGenerateBulkUnits,
+} from "@my-project/shared";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -62,6 +66,11 @@ export default function ManagerBuildingDetailScreen() {
   const [unitRows, setUnitRows] = useState<DraftRow[]>([
     { unit_number: "", floor: "" },
   ]);
+  const [addMode, setAddMode] = useState<"manual" | "quick">("manual");
+  const [bulkFloors, setBulkFloors] = useState("");
+  const [bulkUnitsPerFloor, setBulkUnitsPerFloor] = useState("2");
+  const [bulkStartFloor, setBulkStartFloor] = useState("1");
+  const bulkFloorsSeededForBuilding = useRef<string | null>(null);
   const [savingUnits, setSavingUnits] = useState(false);
 
   const [linkUnit, setLinkUnit] = useState<UnitRow | null>(null);
@@ -103,7 +112,7 @@ export default function ManagerBuildingDetailScreen() {
 
     const { data: building, error: bErr } = await supabase
       .from("buildings")
-      .select("address, city")
+      .select("address, city, floors_count")
       .eq("id", bid)
       .eq("business_profile_id", businessProfileId)
       .maybeSingle();
@@ -179,15 +188,71 @@ export default function ManagerBuildingDetailScreen() {
     setProfiles((profs ?? []) as ProfileRow[]);
     setUnits(merged);
     setEligibleProfiles((eligibleRaw ?? []) as EligibleProfile[]);
+
+    const fc = building.floors_count;
+    if (bulkFloorsSeededForBuilding.current !== bid) {
+      bulkFloorsSeededForBuilding.current = bid;
+      setBulkFloors(fc != null && fc > 0 ? String(fc) : "");
+    }
   }, [id]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  async function onSaveUnits() {
+  const unitsSorted = useMemo(
+    () =>
+      [...units].sort((a, b) =>
+        a.unit_number.localeCompare(b.unit_number, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        })
+      ),
+    [units]
+  );
+
+  const bulkValidated = useMemo(() => {
+    if (addMode !== "quick") return null;
+    const floorCount = Number.parseInt(bulkFloors, 10);
+    const unitsPerFloor = Number.parseInt(bulkUnitsPerFloor, 10);
+    const startTrim = bulkStartFloor.trim();
+    const startFloor =
+      startTrim === "" ? undefined : Number.parseInt(bulkStartFloor, 10);
+    return validateAndGenerateBulkUnits({
+      floorCount,
+      unitsPerFloor,
+      startFloor,
+    });
+  }, [addMode, bulkFloors, bulkUnitsPerFloor, bulkStartFloor]);
+
+  const bulkIssues = useMemo(() => {
+    if (!bulkValidated || !bulkValidated.ok) return null;
+    return analyzeBulkUnitNumberIssues(
+      bulkValidated.rows,
+      unitsSorted.map((u) => u.unit_number)
+    );
+  }, [bulkValidated, unitsSorted]);
+
+  async function persistUnitsRows(
+    parsed: { unit_number: string; floor_number: number | null }[]
+  ) {
     if (!id) return;
     const bid = Array.isArray(id) ? id[0] : id;
+    setSavingUnits(true);
+    const result = await postBuildingUnitsViaWebApi(bid, parsed);
+    setSavingUnits(false);
+
+    if (!result.ok) {
+      Alert.alert("שגיאה", result.error);
+      return;
+    }
+
+    setUnitRows([{ unit_number: "", floor: "" }]);
+    void load();
+    Alert.alert("הצלחה", "הדירות נשמרו.");
+  }
+
+  async function onSaveUnits() {
     const parsed = unitRows
       .map((r) => ({
         unit_number: r.unit_number.trim(),
@@ -211,18 +276,42 @@ export default function ManagerBuildingDetailScreen() {
       }
     }
 
-    setSavingUnits(true);
-    const result = await postBuildingUnitsViaWebApi(bid, parsed);
-    setSavingUnits(false);
+    await persistUnitsRows(parsed);
+  }
 
-    if (!result.ok) {
-      Alert.alert("שגיאה", result.error);
+  async function onSaveQuickUnits() {
+    if (!bulkValidated || !bulkValidated.ok) {
+      Alert.alert(
+        "שגיאה",
+        bulkValidated && !bulkValidated.ok
+          ? bulkValidated.error
+          : "מלאו את שדות הרשת במספרים תקינים."
+      );
       return;
     }
 
-    setUnitRows([{ unit_number: "", floor: "" }]);
-    void load();
-    Alert.alert("הצלחה", "הדירות נשמרו.");
+    const issues = bulkIssues ?? {
+      internalDuplicates: [] as string[],
+      conflictsWithExisting: [] as string[],
+    };
+
+    if (issues.internalDuplicates.length) {
+      Alert.alert("שגיאה", "נוצרו כפילויות פנימיות במספרי דירה.");
+      return;
+    }
+
+    if (issues.conflictsWithExisting.length) {
+      const list = issues.conflictsWithExisting.slice(0, 12).join(", ");
+      Alert.alert(
+        "שגיאה",
+        `מספרי דירה שכבר קיימים בבניין: ${list}${
+          issues.conflictsWithExisting.length > 12 ? " …" : ""
+        }`
+      );
+      return;
+    }
+
+    await persistUnitsRows(bulkValidated.rows);
   }
 
   async function onLinkExisting(profileId: string) {
@@ -296,63 +385,175 @@ export default function ManagerBuildingDetailScreen() {
         <Text className="mb-6 text-sm text-gray-600">{city.trim() || "—"}</Text>
 
         <Text className="mb-2 font-semibold text-slate-800">הוספת דירות</Text>
-        <Text className="mb-3 text-sm text-gray-600">
-          ניתן להוסיף כמה דירות; לכל דירה ציינו מספר דירה וקומה.
-        </Text>
-        {unitRows.map((row, i) => (
-          <View key={i} className="mb-3 flex-row gap-2">
-            <TextInput
-              className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-left"
-              placeholder="מספר דירה"
-              value={row.unit_number}
-              onChangeText={(v) =>
-                setUnitRows((prev) =>
-                  prev.map((r, j) =>
-                    j === i ? { ...r, unit_number: v } : r
-                  )
-                )
+        <View className="mb-3 flex-row gap-2">
+          <Pressable
+            className={`flex-1 rounded-lg py-2.5 ${
+              addMode === "manual" ? "bg-slate-800" : "border border-gray-300"
+            }`}
+            onPress={() => setAddMode("manual")}
+          >
+            <Text
+              className={`text-center text-sm font-semibold ${
+                addMode === "manual" ? "text-white" : "text-slate-700"
+              }`}
+            >
+              ידני
+            </Text>
+          </Pressable>
+          <Pressable
+            className={`flex-1 rounded-lg py-2.5 ${
+              addMode === "quick" ? "bg-slate-800" : "border border-gray-300"
+            }`}
+            onPress={() => setAddMode("quick")}
+          >
+            <Text
+              className={`text-center text-sm font-semibold ${
+                addMode === "quick" ? "text-white" : "text-slate-700"
+              }`}
+            >
+              הוספה מהירה
+            </Text>
+          </Pressable>
+        </View>
+
+        {addMode === "manual" ? (
+          <>
+            <Text className="mb-3 text-sm text-gray-600">
+              ניתן להוסיף כמה דירות; לכל דירה ציינו מספר דירה וקומה.
+            </Text>
+            {unitRows.map((row, i) => (
+              <View key={i} className="mb-3 flex-row gap-2">
+                <TextInput
+                  className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                  placeholder="מספר דירה"
+                  value={row.unit_number}
+                  onChangeText={(v) =>
+                    setUnitRows((prev) =>
+                      prev.map((r, j) =>
+                        j === i ? { ...r, unit_number: v } : r
+                      )
+                    )
+                  }
+                />
+                <TextInput
+                  className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                  placeholder="קומה"
+                  keyboardType="number-pad"
+                  value={row.floor}
+                  onChangeText={(v) =>
+                    setUnitRows((prev) =>
+                      prev.map((r, j) =>
+                        j === i ? { ...r, floor: v } : r
+                      )
+                    )
+                  }
+                />
+                {unitRows.length > 1 ? (
+                  <Pressable
+                    className="justify-center px-2"
+                    onPress={() =>
+                      setUnitRows((prev) => prev.filter((_, j) => j !== i))
+                    }
+                  >
+                    <Text className="text-red-600">✕</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
+            <Pressable
+              className="mb-2 self-start rounded-lg border border-gray-300 px-3 py-2"
+              onPress={() =>
+                setUnitRows((prev) => [...prev, { unit_number: "", floor: "" }])
               }
-            />
+            >
+              <Text className="text-sm font-medium text-slate-700">
+                שורה נוספת
+              </Text>
+            </Pressable>
+            <Pressable
+              className="mb-8 rounded-lg bg-slate-800 py-3 disabled:opacity-50"
+              disabled={savingUnits}
+              onPress={() => void onSaveUnits()}
+            >
+              <Text className="text-center font-semibold text-white">
+                {savingUnits ? "שומר…" : "שמירת דירות"}
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text className="mb-3 text-sm text-gray-600">
+              ציינו כמה קומות ברצף, כמה דירות בכל קומה ואופציונית קומת התחלה.
+              מספרי דירה ייווצרו אוטומטית (למשל 2-01).
+            </Text>
+            <Text className="mb-1 text-sm text-gray-600">מספר קומות</Text>
             <TextInput
-              className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-left"
-              placeholder="קומה"
+              className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+              placeholder="למשל 5"
               keyboardType="number-pad"
-              value={row.floor}
-              onChangeText={(v) =>
-                setUnitRows((prev) =>
-                  prev.map((r, j) => (j === i ? { ...r, floor: v } : r))
-                )
-              }
+              value={bulkFloors}
+              onChangeText={setBulkFloors}
             />
-            {unitRows.length > 1 ? (
-              <Pressable
-                className="justify-center px-2"
-                onPress={() =>
-                  setUnitRows((prev) => prev.filter((_, j) => j !== i))
-                }
-              >
-                <Text className="text-red-600">✕</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ))}
-        <Pressable
-          className="mb-2 self-start rounded-lg border border-gray-300 px-3 py-2"
-          onPress={() =>
-            setUnitRows((prev) => [...prev, { unit_number: "", floor: "" }])
-          }
-        >
-          <Text className="text-sm font-medium text-slate-700">שורה נוספת</Text>
-        </Pressable>
-        <Pressable
-          className="mb-8 rounded-lg bg-slate-800 py-3 disabled:opacity-50"
-          disabled={savingUnits}
-          onPress={() => void onSaveUnits()}
-        >
-          <Text className="text-center font-semibold text-white">
-            {savingUnits ? "שומר…" : "שמירת דירות"}
-          </Text>
-        </Pressable>
+            <Text className="mb-1 text-sm text-gray-600">דירות בכל קומה</Text>
+            <TextInput
+              className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+              placeholder="למשל 4"
+              keyboardType="number-pad"
+              value={bulkUnitsPerFloor}
+              onChangeText={setBulkUnitsPerFloor}
+            />
+            <Text className="mb-1 text-sm text-gray-600">
+              קומת התחלה (אופציונלי, ברירת מחדל 1)
+            </Text>
+            <TextInput
+              className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+              placeholder="1 או 0 לקרקע"
+              keyboardType="number-pad"
+              value={bulkStartFloor}
+              onChangeText={setBulkStartFloor}
+            />
+            <View className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              {bulkValidated && bulkValidated.ok ? (
+                <>
+                  <Text className="text-sm font-semibold text-slate-800">
+                    ייווצרו {bulkValidated.total} דירות
+                  </Text>
+                  {bulkIssues && bulkIssues.conflictsWithExisting.length > 0 ? (
+                    <Text className="mt-1 text-sm text-red-600">
+                      חפיפה עם דירות קיימות:{" "}
+                      {bulkIssues.conflictsWithExisting.slice(0, 8).join(", ")}
+                      {bulkIssues.conflictsWithExisting.length > 8 ? " …" : ""}
+                    </Text>
+                  ) : (
+                    <Text className="mt-1 text-sm text-gray-600">
+                      דוגמה:{" "}
+                      {bulkValidated.rows
+                        .slice(0, 4)
+                        .map((r) => r.unit_number)
+                        .join(", ")}
+                      {bulkValidated.total > 4 ? " …" : ""}
+                    </Text>
+                  )}
+                </>
+              ) : bulkValidated && !bulkValidated.ok ? (
+                <Text className="text-sm text-red-600">{bulkValidated.error}</Text>
+              ) : (
+                <Text className="text-sm text-gray-500">
+                  הזינו מספרים לתצוגה מקדימה.
+                </Text>
+              )}
+            </View>
+            <Pressable
+              className="mb-8 rounded-lg bg-slate-800 py-3 disabled:opacity-50"
+              disabled={savingUnits}
+              onPress={() => void onSaveQuickUnits()}
+            >
+              <Text className="text-center font-semibold text-white">
+                {savingUnits ? "שומר…" : "שמירת דירות"}
+              </Text>
+            </Pressable>
+          </>
+        )}
 
         <Text className="mb-2 font-semibold text-slate-800">דירות</Text>
         {units.length === 0 ? (

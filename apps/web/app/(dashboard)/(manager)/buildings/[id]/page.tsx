@@ -141,9 +141,11 @@ export default async function BuildingDetailPage({
       ) : null}
 
       <ManagerBuildingUnitsPanel
+        key={params.id}
         buildingId={params.id}
         units={unitsWithResident}
         eligibleProfiles={eligibleProfiles}
+        suggestedFloorCount={building.floors_count}
       />
 
       <div>

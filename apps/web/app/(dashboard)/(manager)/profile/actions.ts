@@ -44,6 +44,7 @@ export async function updateManagerBusinessAction(
     legal_name: String(formData.get("legal_name") ?? "").trim() || null,
     tax_id: String(formData.get("tax_id") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
+    about: String(formData.get("about") ?? "").trim() || null,
   });
 
   if (!result.ok) {

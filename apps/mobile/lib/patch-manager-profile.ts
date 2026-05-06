@@ -10,6 +10,7 @@ export type ManagerBusinessApiPayload = {
   legal_name?: string | null;
   tax_id?: string | null;
   notes?: string | null;
+  about?: string | null;
 };
 
 export type ManagerProfileApiPayload = {

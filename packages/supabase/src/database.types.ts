@@ -30,6 +30,7 @@ export type Database = {
           legal_name: string | null;
           tax_id: string | null;
           notes: string | null;
+          about: string | null;
         };
         Insert: {
           id?: string;
@@ -45,6 +46,7 @@ export type Database = {
           legal_name?: string | null;
           tax_id?: string | null;
           notes?: string | null;
+          about?: string | null;
         };
         Update: {
           id?: string;
@@ -60,6 +62,7 @@ export type Database = {
           legal_name?: string | null;
           tax_id?: string | null;
           notes?: string | null;
+          about?: string | null;
         };
         Relationships: [];
       };

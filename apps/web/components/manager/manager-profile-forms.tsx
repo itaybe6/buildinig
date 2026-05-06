@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
+import { cn } from "@/lib/utils";
 import { createClient as createBrowserSupabase } from "@/lib/supabase/client";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -31,6 +32,8 @@ type BusinessDefaults = {
   legal_name: string | null;
   tax_id: string | null;
   notes: string | null;
+  /** אודות העסק — טקסט ציבורי */
+  about: string | null;
   plan: string | null;
   is_active: boolean | null;
   created_at: string | null;
@@ -188,6 +191,18 @@ function ManagerBusinessView({ defaults }: { defaults: BusinessDefaults }) {
         </div>
       ) : null}
 
+      {defaults.about?.trim() ? (
+        <div className="rounded-xl border bg-muted/30 p-4">
+          <p className="text-xs font-medium text-muted-foreground">אודות העסק</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm">{defaults.about}</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed bg-muted/15 p-4">
+          <p className="text-xs font-medium text-muted-foreground">אודות העסק</p>
+          <p className="mt-1 text-sm text-muted-foreground">לא הוגדר טקסט אודות.</p>
+        </div>
+      )}
+
       <div className="rounded-xl border border-dashed bg-muted/15 p-4 text-xs text-muted-foreground">
         <p>
           <span className="font-medium text-foreground">תוכנית: </span>
@@ -318,6 +333,22 @@ function ManagerBusinessEditForm({
             name="notes"
             defaultValue={defaults.notes ?? ""}
           />
+        </div>
+        <div className="grid gap-2 sm:col-span-2">
+          <Label htmlFor="bp-about">אודות העסק</Label>
+          <textarea
+            id="bp-about"
+            name="about"
+            rows={5}
+            defaultValue={defaults.about ?? ""}
+            placeholder="תיאור קצר של העסק — יוצג לדיירים כשיהיה רלוונטי בממשק."
+            className={cn(
+              "min-h-[120px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            שדה זה מיועד לתוכן ציבורי (לא הערות פנימיות).
+          </p>
         </div>
       </div>
 

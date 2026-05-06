@@ -26,7 +26,7 @@ export default async function ManagerProfilePage() {
       supabase
         .from("business_profiles")
         .select(
-          "id, name, logo_url, primary_color, contact_email, contact_phone, legal_name, tax_id, notes, plan, is_active, created_at"
+          "id, name, logo_url, primary_color, contact_email, contact_phone, legal_name, tax_id, notes, about, plan, is_active, created_at"
         )
         .eq("id", ctx.tenantId)
         .maybeSingle(),
@@ -77,6 +77,7 @@ export default async function ManagerProfilePage() {
           legal_name: business.legal_name,
           tax_id: business.tax_id,
           notes: business.notes,
+          about: business.about,
           plan: business.plan,
           is_active: business.is_active,
           created_at: business.created_at,

@@ -13,6 +13,7 @@ export type ManagerBusinessPatch = {
   legal_name: string | null;
   tax_id: string | null;
   notes: string | null;
+  about: string | null;
 };
 
 export type ManagerProfileRowPatch = {
@@ -44,6 +45,7 @@ export async function persistManagerBusinessProfile(
     legal_name: input.legal_name?.trim() || null,
     tax_id: input.tax_id?.trim() || null,
     notes: input.notes?.trim() || null,
+    about: input.about?.trim() || null,
     updated_at: now,
   };
 

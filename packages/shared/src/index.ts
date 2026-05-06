@@ -1,3 +1,4 @@
+export * from "./manager";
 export * from "./constants";
 export * from "./tenant";
 export * from "./types";
