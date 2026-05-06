@@ -2,8 +2,7 @@
  * Placeholder aligned with your Postgres schema.
  * Replace via: pnpm --filter @my-project/supabase gen-types (set SUPABASE_PROJECT_REF + CLI login).
  *
- * Multi-tenant scope: prefer `business_profile_id` (FK → business_profiles.id). Legacy `tenant_id`
- * may still exist in Postgres (RLS helpers); keep in Row when present remotely.
+ * Multi-tenant row scope: `business_profile_id` (FK → business_profiles.id).
  */
 export type Json =
   | string
@@ -68,8 +67,6 @@ export type Database = {
         Row: {
           id: string;
           auth_user_id: string | null;
-          /** @deprecated legacy tenant scope — align with `business_profile_id` when possible */
-          tenant_id: string | null;
           business_profile_id: string | null;
           building_id: string | null;
           unit_id: string | null;
@@ -85,7 +82,6 @@ export type Database = {
         Insert: {
           id?: string;
           auth_user_id?: string | null;
-          tenant_id?: string | null;
           business_profile_id?: string | null;
           building_id?: string | null;
           unit_id?: string | null;
@@ -101,7 +97,6 @@ export type Database = {
         Update: {
           id?: string;
           auth_user_id?: string | null;
-          tenant_id?: string | null;
           business_profile_id?: string | null;
           building_id?: string | null;
           unit_id?: string | null;

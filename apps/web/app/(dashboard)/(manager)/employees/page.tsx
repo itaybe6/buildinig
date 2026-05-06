@@ -1,3 +1,4 @@
+import { AddEmployeeDialog } from "@/components/manager/add-employee-dialog";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -22,11 +23,14 @@ export default async function EmployeesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">עובדים</h1>
-        <p className="text-sm text-muted-foreground">
-          פרופילים עם תפקיד עובד שטח בארגון.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">עובדים</h1>
+          <p className="text-sm text-muted-foreground">
+            פרופילים עם תפקיד עובד שטח בארגון.
+          </p>
+        </div>
+        {ctx.profile.role === "manager" ? <AddEmployeeDialog /> : null}
       </div>
 
       {error ? (

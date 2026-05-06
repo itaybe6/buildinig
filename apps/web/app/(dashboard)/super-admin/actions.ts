@@ -31,9 +31,7 @@ export async function updateTenantBusinessAction(
 ): Promise<UpdateTenantBusinessState> {
   await requireSuperAdmin();
 
-  const tenantId = String(
-    formData.get("business_profile_id") ?? formData.get("tenant_id") ?? ""
-  ).trim();
+  const tenantId = String(formData.get("business_profile_id") ?? "").trim();
   if (!tenantId) {
     return { ok: false, error: "חסר מזהה עסק." };
   }
