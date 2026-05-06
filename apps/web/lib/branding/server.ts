@@ -19,6 +19,7 @@ const brandingRoot = path.join(repoRoot, "branding");
 let cachedClient: string | null = null;
 let cachedTheme: WebBrandingTheme | null = null;
 let cachedConfig: WebBrandingConfig | null = null;
+let envLoaded = false;
 
 function readJson<T>(file: string, fallback: T): T {
   try {
@@ -79,6 +80,8 @@ export function getWebConfig(): WebBrandingConfig {
  * Existing process.env keys win — env passed to `next dev` always wins.
  */
 export function loadClientEnvOnce() {
+  if (envLoaded) return;
+  envLoaded = true;
   const client = getActiveClient();
   const file = path.join(brandingRoot, client, ".env");
   if (!fs.existsSync(file)) return;

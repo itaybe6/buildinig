@@ -85,6 +85,23 @@ export async function inferBusinessProfileIdFromProfileLinks(
   if (row.business_profile_id) {
     return row.business_profile_id;
   }
+  if (row.building_id && row.unit_id) {
+    const [{ data: bRow }, { data: uRow }] = await Promise.all([
+      client
+        .from("buildings")
+        .select("business_profile_id")
+        .eq("id", row.building_id)
+        .maybeSingle(),
+      client
+        .from("units")
+        .select("business_profile_id")
+        .eq("id", row.unit_id)
+        .maybeSingle(),
+    ]);
+    if (bRow?.business_profile_id) return bRow.business_profile_id;
+    if (uRow?.business_profile_id) return uRow.business_profile_id;
+    return null;
+  }
   if (row.building_id) {
     const { data } = await client
       .from("buildings")

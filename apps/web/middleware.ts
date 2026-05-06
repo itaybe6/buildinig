@@ -6,7 +6,19 @@ import { NextResponse, type NextRequest } from "next/server";
  * של ה-session דרך `getUser()`. נתיבי API/Route Handlers מטפלים ב-auth שלהם
  * דרך createClient על השרת, ולכן אנחנו לא צריכים לעבור עליהם פה.
  */
+function isSoftNavigationAuthRefresh(request: NextRequest): boolean {
+  /** בקשות Flight / prefetch של Next — ה-layout כבר מריץ getUser בשרת; כפילות כאן מאטה ניווט */
+  return (
+    request.headers.get("RSC") === "1" ||
+    request.headers.get("Next-Router-Prefetch") === "1"
+  );
+}
+
 export async function middleware(request: NextRequest) {
+  if (isSoftNavigationAuthRefresh(request)) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
