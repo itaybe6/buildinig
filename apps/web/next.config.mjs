@@ -20,6 +20,9 @@ const REACT_DOM_PATH = path.join(workspaceRoot, "node_modules", "react-dom");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [{ source: "/home", destination: "/requests", permanent: true }];
+  },
   transpilePackages: [
     "@my-project/supabase",
     "@my-project/shared",

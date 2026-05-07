@@ -115,7 +115,7 @@ export default function LoginScreen() {
       return;
     }
     if (role === "resident") {
-      router.replace("/(resident)/home");
+      router.replace("/(resident)/requests");
       return;
     }
     if (role === "manager") {

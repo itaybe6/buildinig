@@ -4,17 +4,17 @@ import { Tabs } from "expo-router";
 export default function ResidentTabsLayout() {
   return (
     <Tabs
+      initialRouteName="requests"
       screenOptions={{
         headerTitleAlign: "center",
         headerRight: () => <LogoutButton />,
       }}
     >
-      <Tabs.Screen name="home" options={{ title: "בית", tabBarLabel: "בית" }} />
       <Tabs.Screen
         name="requests"
         options={{
-          title: "מודעות וקריאות",
-          tabBarLabel: "מודעות וקריאות",
+          title: "בית",
+          tabBarLabel: "בית",
           headerShown: false,
         }}
       />

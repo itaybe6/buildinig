@@ -1,4 +1,6 @@
-import { AddServiceTypeForm } from "@/components/manager/add-service-type-form";
+import { AddServiceTypeDialog } from "@/components/manager/add-service-type-dialog";
+import type { ServiceTypeTableRow } from "@/components/manager/service-types-table";
+import { ServiceTypesTable } from "@/components/manager/service-types-table";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -8,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
-import { REQUEST_CATEGORY_LABEL } from "@my-project/shared";
+import type { RequestCategory } from "@my-project/shared";
 
 export default async function ServiceTypesPage() {
   const ctx = await getManagerTenantContext();
@@ -23,16 +25,25 @@ export default async function ServiceTypesPage() {
     .eq("business_profile_id", ctx.businessProfileId)
     .order("name");
 
+  const canManage = ctx.profile.role === "manager";
+
+  const tableRows: ServiceTypeTableRow[] = (rows ?? []).map((r) => ({
+    ...r,
+    category: r.category as RequestCategory,
+  }));
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">סוגי שירות</h1>
-        <p className="text-sm text-muted-foreground">
-          הגדרת סוגי שירות לארגון — מופיעים בהצעות מחיר ובחירות דיירים לפי ההגדרות.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">סוגי שירות</h1>
+          <p className="text-sm text-muted-foreground">
+            הגדרת סוגי שירות לארגון — מופיעים בהצעות מחיר ובחירות דיירים לפי
+            ההגדרות.
+          </p>
+        </div>
+        {canManage ? <AddServiceTypeDialog /> : null}
       </div>
-
-      <AddServiceTypeForm />
 
       {error ? (
         <Card>
@@ -41,50 +52,19 @@ export default async function ServiceTypesPage() {
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
-      ) : !rows?.length ? (
+      ) : !tableRows.length ? (
         <Card>
           <CardHeader>
             <CardTitle>אין סוגי שירות</CardTitle>
-            <CardDescription>הוסיפו רשומות ב-Supabase או דרך הממשק בעתיד.</CardDescription>
+            <CardDescription>
+              {canManage
+                ? "לחצו על «הוספת סוג שירות» למעלה כדי ליצור את הרשומה הראשונה."
+                : "לא נמצאו סוגי שירות לארגון."}
+            </CardDescription>
           </CardHeader>
         </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[800px] text-sm">
-            <thead className="border-b bg-muted/50">
-              <tr>
-                <th className="px-3 py-2 text-start font-medium">שם</th>
-                <th className="px-3 py-2 text-start font-medium">קטגוריה</th>
-                <th className="px-3 py-2 text-start font-medium">תיאור</th>
-                <th className="px-3 py-2 text-start font-medium">מחיר מינ׳</th>
-                <th className="px-3 py-2 text-start font-medium">מחיר מקס׳</th>
-                <th className="px-3 py-2 text-start font-medium">יחידה</th>
-                <th className="px-3 py-2 text-start font-medium">פעיל</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium">{r.name}</td>
-                  <td className="px-3 py-2">
-                    {REQUEST_CATEGORY_LABEL[r.category]}
-                  </td>
-                  <td className="max-w-[200px] truncate px-3 py-2 text-muted-foreground">
-                    {r.description ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 tabular-nums">
-                    {r.price_min ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 tabular-nums">
-                    {r.price_max ?? "—"}
-                  </td>
-                  <td className="px-3 py-2">{r.price_unit ?? "—"}</td>
-                  <td className="px-3 py-2">{r.is_active ? "כן" : "לא"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ServiceTypesTable rows={tableRows} canManage={canManage} />
       )}
     </div>
   );

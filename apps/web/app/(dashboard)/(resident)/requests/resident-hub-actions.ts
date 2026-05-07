@@ -98,7 +98,6 @@ export async function residentCreateAnnouncementAction(
   }
 
   revalidatePath("/requests");
-  revalidatePath("/home");
   return { ok: true, message: "המודעה פורסמה." };
 }
 
@@ -164,6 +163,5 @@ export async function residentCreateServiceRequestAction(
   }
 
   revalidatePath("/requests");
-  revalidatePath("/home");
   return { ok: true, message: "הקריאה נוצרה." };
 }

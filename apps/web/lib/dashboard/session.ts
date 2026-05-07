@@ -152,7 +152,7 @@ function tenantScopeFromProfile(profile: AuthProfile): ManagerTenantContext {
 
 export async function getManagerTenantContext(): Promise<ManagerTenantContext> {
   const profile = await requireAuthProfile();
-  if (profile.role === "resident") redirect("/home");
+  if (profile.role === "resident") redirect("/requests");
   if (isFieldWorkerRole(profile.role)) redirect("/assignments");
   return tenantScopeFromProfile(profile);
 }

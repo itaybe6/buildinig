@@ -121,7 +121,7 @@ export default function ResidentAnnouncementsAndRequestsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-white px-4 pt-4">
-      <Text className="mb-2 text-xl font-bold">מודעות וקריאות</Text>
+      <Text className="mb-2 text-xl font-bold">בית</Text>
       <Text className="mb-4 text-sm text-gray-600">
         מודעות מהבניין וקריאות שירות של כל הדיירים בבניינים שלך.
       </Text>

@@ -43,13 +43,11 @@ export default async function ResidentRequestsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          מודעות וקריאות
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">בית</h1>
         <p className="text-sm text-muted-foreground">
-          עוברים בין מודעות לקריאות שירות של הבניין. כפתור &quot;הוסף&quot;
-          לפתיחת טופס פרסום או קריאה חדשה — כולל צירוף עד שתי תמונות ושני
-          סרטונים.
+          מודעות וקריאות שירות מהבניין — באותו מקום. ניתן לעבור בין מודעות
+          לקריאות, ובכפתור &quot;הוסף&quot; לפרסם או לפתוח קריאה (עד שתי תמונות
+          ושני סרטונים לפריט).
         </p>
       </div>
 

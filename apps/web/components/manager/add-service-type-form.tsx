@@ -14,8 +14,22 @@ const CATEGORY_KEYS = Object.keys(
   REQUEST_CATEGORY_LABEL
 ) as RequestCategory[];
 
-export function AddServiceTypeForm() {
+export type AddServiceTypeFormProps = {
+  /** מצב דיאלוג: ללא כותרת כפולה ועם מסגרת מינימלית */
+  variant?: "page" | "dialog";
+  formClassName?: string;
+  onSuccess?: () => void;
+};
+
+export function AddServiceTypeForm({
+  variant = "page",
+  formClassName,
+  onSuccess,
+}: AddServiceTypeFormProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
   const [state, formAction] = useFormState<
     CreateServiceTypeActionState | undefined,
     FormData
@@ -26,6 +40,8 @@ export function AddServiceTypeForm() {
     if (state?.ok) {
       if (!successHandled.current) {
         successHandled.current = true;
+        formRef.current?.reset();
+        onSuccessRef.current?.();
         router.refresh();
       }
     } else {
@@ -33,17 +49,35 @@ export function AddServiceTypeForm() {
     }
   }, [state, router]);
 
+  const isDialog = variant === "dialog";
+  const shell =
+    formClassName ??
+    (isDialog
+      ? "grid gap-4"
+      : "grid max-w-xl gap-4 rounded-lg border bg-card p-4");
+
   return (
-    <form
-      action={formAction}
-      className="grid max-w-xl gap-4 rounded-lg border bg-card p-4"
-    >
-      <p className="font-medium">הוספת סוג שירות</p>
-      <p className="text-sm text-muted-foreground">
-        השירות משויך לארגון שלך (
-        <code className="rounded bg-muted px-1 text-xs">business_profile_id</code>
-        ).
-      </p>
+    <form ref={formRef} action={formAction} className={shell}>
+      {!isDialog ? (
+        <>
+          <p className="font-medium">הוספת סוג שירות</p>
+          <p className="text-sm text-muted-foreground">
+            השירות משויך לארגון שלך (
+            <code className="rounded bg-muted px-1 text-xs">
+              business_profile_id
+            </code>
+            ).
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          השירות משויך לארגון שלך (
+          <code className="rounded bg-muted px-1 text-xs">
+            business_profile_id
+          </code>
+          ).
+        </p>
+      )}
 
       <div className="grid gap-2">
         <Label htmlFor="st-name">שם שירות</Label>
@@ -141,12 +175,24 @@ export function AddServiceTypeForm() {
         <p className="text-sm text-destructive">{state.error}</p>
       ) : null}
 
-      <Button
-        type="submit"
-        className="min-h-[44px] w-full touch-manipulation sm:min-h-10 sm:w-auto"
+      <div
+        className={
+          isDialog
+            ? "sticky bottom-0 -mx-4 -mb-4 mt-2 flex flex-col gap-2 border-t bg-card p-4 sm:flex-row sm:justify-end"
+            : ""
+        }
       >
-        שמירת סוג שירות
-      </Button>
+        <Button
+          type="submit"
+          className={
+            isDialog
+              ? "min-h-[44px] w-full touch-manipulation sm:w-auto"
+              : "min-h-[44px] w-full touch-manipulation sm:min-h-10 sm:w-auto"
+          }
+        >
+          שמירת סוג שירות
+        </Button>
+      </div>
     </form>
   );
 }

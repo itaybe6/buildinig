@@ -24,7 +24,7 @@ export default async function HomePage() {
     redirect("/super-admin/dashboard");
   }
   if (role === "resident") {
-    redirect("/home");
+    redirect("/requests");
   }
   if (role && isFieldWorkerRole(role)) {
     redirect("/assignments");

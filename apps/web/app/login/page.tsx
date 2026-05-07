@@ -48,7 +48,7 @@ export default function LoginPage() {
       role === "super_admin"
         ? "/super-admin/dashboard"
         : role === "resident"
-          ? "/home"
+          ? "/requests"
           : role && isFieldWorkerRole(role)
             ? "/assignments"
             : "/dashboard";
