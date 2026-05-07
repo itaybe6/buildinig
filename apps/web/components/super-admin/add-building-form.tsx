@@ -40,17 +40,26 @@ export function SuperAdminAddBuildingForm({
       city: city.trim(),
       floors_count: floorsCount,
     };
-    const { error: insertError } = await supabase.from("buildings").insert(row);
+    const { data: inserted, error: insertError } = await supabase
+      .from("buildings")
+      .insert(row)
+      .select("id")
+      .single();
     setPending(false);
     if (insertError) {
       setError(insertError.message);
       return;
     }
+    const newId = inserted?.id as string | undefined;
     setAddress("");
     setCity("");
     setFloors("1");
-    router.refresh();
     if (collapsible) setOpen(false);
+    if (newId) {
+      router.push(`/super-admin/tenants/${tenantId}/buildings/${newId}`);
+    } else {
+      router.refresh();
+    }
   }
 
   const form = (

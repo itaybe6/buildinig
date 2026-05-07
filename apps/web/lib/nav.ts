@@ -1,4 +1,4 @@
-import type { UserRole } from "@my-project/shared";
+import { isFieldWorkerRole, type UserRole } from "@my-project/shared";
 
 export type NavItem = {
   href: string;
@@ -60,7 +60,7 @@ export function getSidebarSections(role: UserRole): {
       groups: [{ title: null, items: MANAGER_NAV }],
     };
   }
-  if (role === "employee") {
+  if (isFieldWorkerRole(role)) {
     return {
       groups: [{ title: "עובד", items: EMPLOYEE_NAV }],
     };

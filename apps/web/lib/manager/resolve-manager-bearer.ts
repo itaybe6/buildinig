@@ -43,7 +43,7 @@ export async function resolveManagerBearerScope(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, business_profile_id, building_id, unit_id")
+    .select("id, role, business_profile_id")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -56,7 +56,10 @@ export async function resolveManagerBearerScope(
   if (!businessProfileId) {
     businessProfileId = await inferBusinessProfileIdFromProfileLinks(
       supabase,
-      profile
+      {
+        id: profile.id,
+        business_profile_id: profile.business_profile_id,
+      }
     );
   }
 

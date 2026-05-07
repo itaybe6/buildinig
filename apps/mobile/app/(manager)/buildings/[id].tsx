@@ -67,9 +67,10 @@ export default function ManagerBuildingDetailScreen() {
     { unit_number: "", floor: "" },
   ]);
   const [addMode, setAddMode] = useState<"manual" | "quick">("manual");
-  const [bulkFloors, setBulkFloors] = useState("");
+  const [bulkFloorFrom, setBulkFloorFrom] = useState("1");
+  const [bulkFloorTo, setBulkFloorTo] = useState("");
   const [bulkUnitsPerFloor, setBulkUnitsPerFloor] = useState("2");
-  const [bulkStartFloor, setBulkStartFloor] = useState("1");
+  const [bulkAptStart, setBulkAptStart] = useState("1");
   const bulkFloorsSeededForBuilding = useRef<string | null>(null);
   const [savingUnits, setSavingUnits] = useState(false);
 
@@ -117,34 +118,71 @@ export default function ManagerBuildingDetailScreen() {
       .eq("business_profile_id", businessProfileId)
       .maybeSingle();
 
-    const { data: profs, error: pErr } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone, role, is_active")
-      .eq("business_profile_id", businessProfileId)
-      .eq("building_id", bid)
-      .order("full_name");
-
     const { data: unitsRaw, error: uErr } = await supabase
       .from("units")
-      .select("id, unit_number, floor_number, monthly_fee, type")
+      .select("id, unit_number, floor_number, monthly_fee, type, resident_profile_id")
       .eq("building_id", bid)
-      .eq("business_profile_id", businessProfileId)
       .order("unit_number");
 
-    const { data: unitResidents, error: urErr } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone, unit_id")
-      .eq("business_profile_id", businessProfileId)
-      .eq("building_id", bid)
-      .not("unit_id", "is", null);
+    const residentIds = [
+      ...new Set(
+        (unitsRaw ?? [])
+          .map((u) => u.resident_profile_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
 
-    const { data: eligibleRaw, error: eErr } = await supabase
+    const { data: residentRows, error: rsErr } =
+      residentIds.length > 0
+        ? await supabase
+            .from("profiles")
+            .select("id, full_name, phone")
+            .in("id", residentIds)
+        : { data: [] as { id: string; full_name: string; phone: string | null }[], error: null };
+
+    const { data: linkedProfs, error: lpErr } =
+      residentIds.length > 0
+        ? await supabase
+            .from("profiles")
+            .select("id, full_name, phone, role, is_active")
+            .in("id", residentIds)
+            .order("full_name")
+        : { data: [] as ProfileRow[], error: null };
+
+    const profileById = new Map(
+      (residentRows ?? []).map((p) => [p.id, p] as const)
+    );
+
+    const { data: orgBuildings } = await supabase
+      .from("buildings")
+      .select("id")
+      .eq("business_profile_id", businessProfileId);
+
+    const orgBuildingIds = (orgBuildings ?? []).map((b) => b.id);
+    const { data: orgUnits } =
+      orgBuildingIds.length > 0
+        ? await supabase
+            .from("units")
+            .select("resident_profile_id")
+            .in("building_id", orgBuildingIds)
+        : { data: [] as { resident_profile_id: string | null }[] };
+
+    const assignedResidentIds = new Set(
+      (orgUnits ?? [])
+        .map((x) => x.resident_profile_id)
+        .filter((x): x is string => Boolean(x))
+    );
+
+    const { data: residentPool, error: poolErr } = await supabase
       .from("profiles")
       .select("id, full_name, phone")
       .eq("business_profile_id", businessProfileId)
       .eq("role", "resident")
-      .is("unit_id", null)
-      .or(`building_id.is.null,building_id.eq.${bid}`);
+      .order("full_name");
+
+    const eligibleRaw = (residentPool ?? []).filter(
+      (p) => !assignedResidentIds.has(p.id)
+    );
 
     setLoading(false);
 
@@ -152,47 +190,46 @@ export default function ManagerBuildingDetailScreen() {
       setErr(bErr?.message ?? "בניין לא נמצא");
       return;
     }
-    if (pErr) {
-      setErr(pErr.message);
-      return;
-    }
     if (uErr) {
       setErr(uErr.message);
       return;
     }
-    if (urErr) {
-      setErr(urErr.message);
+    if (residentIds.length > 0 && (rsErr || lpErr)) {
+      setErr(rsErr?.message ?? lpErr?.message ?? "שגיאת טעינה");
       return;
     }
-    if (eErr) {
-      setErr(eErr.message);
+    if (poolErr) {
+      setErr(poolErr.message);
       return;
     }
-
-    const residentByUnitId = new Map(
-      (unitResidents ?? []).map((r) => [r.unit_id as string, r])
-    );
 
     const merged: UnitRow[] = (unitsRaw ?? []).map((u) => {
-      const r = residentByUnitId.get(u.id);
+      const rp = u.resident_profile_id
+        ? profileById.get(u.resident_profile_id)
+        : undefined;
       return {
-        ...u,
-        resident: r
-          ? { id: r.id, full_name: r.full_name, phone: r.phone }
+        id: u.id,
+        unit_number: u.unit_number,
+        floor_number: u.floor_number,
+        monthly_fee: u.monthly_fee,
+        type: u.type,
+        resident: rp
+          ? { id: rp.id, full_name: rp.full_name, phone: rp.phone }
           : null,
       };
     });
 
     setAddress(building.address ?? "");
     setCity(building.city ?? "");
-    setProfiles((profs ?? []) as ProfileRow[]);
+    setProfiles((linkedProfs ?? []) as ProfileRow[]);
     setUnits(merged);
-    setEligibleProfiles((eligibleRaw ?? []) as EligibleProfile[]);
+    setEligibleProfiles(eligibleRaw as EligibleProfile[]);
 
     const fc = building.floors_count;
     if (bulkFloorsSeededForBuilding.current !== bid) {
       bulkFloorsSeededForBuilding.current = bid;
-      setBulkFloors(fc != null && fc > 0 ? String(fc) : "");
+      setBulkFloorFrom("1");
+      setBulkFloorTo(fc != null && fc > 0 ? String(fc) : "");
     }
   }, [id]);
 
@@ -213,17 +250,19 @@ export default function ManagerBuildingDetailScreen() {
 
   const bulkValidated = useMemo(() => {
     if (addMode !== "quick") return null;
-    const floorCount = Number.parseInt(bulkFloors, 10);
+    const floorFrom = Number.parseInt(bulkFloorFrom, 10);
+    const floorTo = Number.parseInt(bulkFloorTo, 10);
     const unitsPerFloor = Number.parseInt(bulkUnitsPerFloor, 10);
-    const startTrim = bulkStartFloor.trim();
-    const startFloor =
-      startTrim === "" ? undefined : Number.parseInt(bulkStartFloor, 10);
+    const aptTrim = bulkAptStart.trim();
+    const aptStart =
+      aptTrim === "" ? undefined : Number.parseInt(bulkAptStart, 10);
     return validateAndGenerateBulkUnits({
-      floorCount,
+      floorFrom,
+      floorTo,
       unitsPerFloor,
-      startFloor,
+      apartmentStartIndex: aptStart,
     });
-  }, [addMode, bulkFloors, bulkUnitsPerFloor, bulkStartFloor]);
+  }, [addMode, bulkFloorFrom, bulkFloorTo, bulkUnitsPerFloor, bulkAptStart]);
 
   const bulkIssues = useMemo(() => {
     if (!bulkValidated || !bulkValidated.ok) return null;
@@ -483,16 +522,24 @@ export default function ManagerBuildingDetailScreen() {
         ) : (
           <>
             <Text className="mb-3 text-sm text-gray-600">
-              ציינו כמה קומות ברצף, כמה דירות בכל קומה ואופציונית קומת התחלה.
-              מספרי דירה ייווצרו אוטומטית (למשל 2-01).
+              בחרו טווח קומות, כמה דירות בכל קומה, ומאיזה מספר דירה להתחיל בכל
+              קומה (למשל 2-05).
             </Text>
-            <Text className="mb-1 text-sm text-gray-600">מספר קומות</Text>
+            <Text className="mb-1 text-sm text-gray-600">מקומה</Text>
+            <TextInput
+              className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+              placeholder="למשל 1 או 0 לקרקע"
+              keyboardType="number-pad"
+              value={bulkFloorFrom}
+              onChangeText={setBulkFloorFrom}
+            />
+            <Text className="mb-1 text-sm text-gray-600">עד קומה</Text>
             <TextInput
               className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
               placeholder="למשל 5"
               keyboardType="number-pad"
-              value={bulkFloors}
-              onChangeText={setBulkFloors}
+              value={bulkFloorTo}
+              onChangeText={setBulkFloorTo}
             />
             <Text className="mb-1 text-sm text-gray-600">דירות בכל קומה</Text>
             <TextInput
@@ -503,20 +550,30 @@ export default function ManagerBuildingDetailScreen() {
               onChangeText={setBulkUnitsPerFloor}
             />
             <Text className="mb-1 text-sm text-gray-600">
-              קומת התחלה (אופציונלי, ברירת מחדל 1)
+              מספר דירה ראשון בכל קומה
             </Text>
             <TextInput
               className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
-              placeholder="1 או 0 לקרקע"
+              placeholder="ברירת מחדל 1"
               keyboardType="number-pad"
-              value={bulkStartFloor}
-              onChangeText={setBulkStartFloor}
+              value={bulkAptStart}
+              onChangeText={setBulkAptStart}
             />
             <View className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               {bulkValidated && bulkValidated.ok ? (
                 <>
                   <Text className="text-sm font-semibold text-slate-800">
                     ייווצרו {bulkValidated.total} דירות
+                  </Text>
+                  <Text className="mt-1 text-sm text-gray-600">
+                    קומות {bulkValidated.preview.floorFrom}–
+                    {bulkValidated.preview.floorTo}; בכל קומה מספרי דירה{" "}
+                    {bulkValidated.preview.apartmentSuffixFrom}–
+                    {bulkValidated.preview.apartmentSuffixTo}
+                  </Text>
+                  <Text className="mt-1 text-sm text-gray-600">
+                    טווח מלא: מ־{bulkValidated.preview.firstUnitNumber} עד{" "}
+                    {bulkValidated.preview.lastUnitNumber}
                   </Text>
                   {bulkIssues && bulkIssues.conflictsWithExisting.length > 0 ? (
                     <Text className="mt-1 text-sm text-red-600">

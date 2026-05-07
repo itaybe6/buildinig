@@ -1,4 +1,5 @@
 import { requireAuthProfile } from "@/lib/dashboard/session";
+import { isFieldWorkerRole } from "@my-project/shared";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -9,7 +10,7 @@ export default async function EmployeeRouteGroupLayout({
   children: ReactNode;
 }) {
   const profile = await requireAuthProfile();
-  if (profile.role !== "employee") {
+  if (!isFieldWorkerRole(profile.role)) {
     redirect("/dashboard");
   }
   return children;

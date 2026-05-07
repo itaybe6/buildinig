@@ -1,4 +1,5 @@
 import { createEmployeeForBusiness } from "@/lib/manager/create-employee";
+import type { FieldStaffRole } from "@my-project/shared";
 import { resolveManagerBearerScope } from "@/lib/manager/resolve-manager-bearer";
 import { NextResponse } from "next/server";
 
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
     full_name?: string;
     password?: string;
     phone?: string;
+    field_role?: string;
   };
   try {
     body = (await req.json()) as typeof body;
@@ -37,11 +39,16 @@ export async function POST(req: Request) {
     );
   }
 
+  const rawRole = String(body.field_role ?? "").trim();
+  const fieldRole: FieldStaffRole =
+    rawRole === "gardener" ? "gardener" : "cleaner";
+
   const result = await createEmployeeForBusiness({
     businessProfileId: scope.businessProfileId,
     fullName: String(body.full_name ?? ""),
     phoneRaw: String(body.phone ?? ""),
     password: String(body.password ?? ""),
+    fieldRole,
   });
 
   if (!result.ok) {

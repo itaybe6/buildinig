@@ -72,22 +72,18 @@ export function InviteResidentForm({
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            דייר חדש ישויך לבניין זה בלבד.
+            דייר חדש ישויך לארגון בלבד; לשיוך לבניין יש לבחור דירה.
           </p>
         )
       ) : hasUnit ? (
         <>
           <p className="font-medium">הוספת דייר לבניין</p>
           <p className="text-sm text-muted-foreground">
-            נוצר משתמש עם תפקיד דייר, משויך לארגון ולבניין זה (
+            נוצר משתמש עם תפקיד דייר, משויך לארגון; השיוך לדירה נשמר ב־
             <code className="rounded bg-muted px-1 text-xs">
-              profiles.building_id
+              units.resident_profile_id
             </code>
-            ). הדייר ישויך גם לדירה שנבחרה (
-            <code className="rounded bg-muted px-1 text-xs">
-              profiles.unit_id
-            </code>
-            ).
+            .
           </p>
           <p className="rounded-md bg-muted/60 px-3 py-2 text-sm">
             מצב קישור דירה פעיל — לאחר יצירת המשתמש הוא ישויך לדירה שנבחרה.
@@ -95,10 +91,14 @@ export function InviteResidentForm({
         </>
       ) : (
         <>
-          <p className="font-medium">הוספת דייר לבניין (ללא דירה ספציפית)</p>
+          <p className="font-medium">הוספת דייר (ללא דירה ספציפית)</p>
           <p className="text-sm text-muted-foreground">
-            נוצר משתמש עם תפקיד דייר, משויך לארגון ולבניין זה. הדייר לא ישויך
-            למספר דירה — ניתן לקשר אותו לדירה מאוחר יותר מטבלת הדירות.
+            נוצר משתמש עם תפקיד דייר, משויך לארגון. כדי לשייך לבניין יש לקשר
+            דייר לדירה מטבלת הדירות — השדה{" "}
+            <code className="rounded bg-muted px-1 text-xs">
+              resident_profile_id
+            </code>
+            .
           </p>
         </>
       )}

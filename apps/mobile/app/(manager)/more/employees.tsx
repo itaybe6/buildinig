@@ -1,6 +1,7 @@
 import { createEmployeeViaWebApi } from "@/lib/create-employee-via-web-api";
 import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
+import { USER_ROLE_LABEL, type UserRole } from "@my-project/shared";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,6 +21,7 @@ type Row = {
   full_name: string;
   phone: string | null;
   is_active: boolean | null;
+  role: string;
 };
 
 export default function ManagerEmployeesScreen() {
@@ -32,6 +34,7 @@ export default function ManagerEmployeesScreen() {
   const [phone, setPhone] = useState("");
   const [formErr, setFormErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fieldRole, setFieldRole] = useState<"cleaner" | "gardener">("cleaner");
 
   const load = useCallback(async () => {
     setErr(null);
@@ -59,9 +62,9 @@ export default function ManagerEmployeesScreen() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, is_active")
+        .select("id, full_name, phone, is_active, role")
         .eq("business_profile_id", businessProfileId)
-        .eq("role", "employee")
+        .in("role", ["cleaner", "gardener", "employee"])
         .order("full_name");
 
       if (error) {
@@ -88,6 +91,7 @@ export default function ManagerEmployeesScreen() {
         full_name: fullName.trim(),
         phone: phone.trim(),
         password,
+        field_role: fieldRole,
       });
       if (!res.ok) {
         setFormErr(res.error);
@@ -97,6 +101,7 @@ export default function ManagerEmployeesScreen() {
       setFullName("");
       setPassword("");
       setPhone("");
+      setFieldRole("cleaner");
       await load();
       Alert.alert("נוצר", "העובד נוסף בהצלחה.");
     } finally {
@@ -150,7 +155,9 @@ export default function ManagerEmployeesScreen() {
                 className="rounded-lg border border-slate-200 px-3 py-3"
               >
                 <Text className="font-semibold">{r.full_name}</Text>
-                <Text className="text-sm text-gray-600">{r.phone ?? "—"}</Text>
+                <Text className="text-sm text-gray-600">
+                  {USER_ROLE_LABEL[r.role as UserRole] ?? r.role} · {r.phone ?? "—"}
+                </Text>
                 <Text className="mt-1 text-xs text-gray-400">
                   {r.is_active ? "פעיל" : "לא פעיל"}
                 </Text>
@@ -187,6 +194,24 @@ export default function ManagerEmployeesScreen() {
                 keyboardShouldPersistTaps="handled"
                 className="max-h-[70%]"
               >
+                <Text className="mb-1 text-xs font-medium text-gray-700">
+                  סוג עובד
+                </Text>
+                <View className="mb-3 flex-row gap-2">
+                  <Pressable
+                    className={`flex-1 rounded-lg border px-3 py-2.5 ${fieldRole === "cleaner" ? "border-blue-600 bg-blue-50" : "border-gray-300"}`}
+                    onPress={() => setFieldRole("cleaner")}
+                  >
+                    <Text className="text-center text-sm font-medium">מנקה</Text>
+                  </Pressable>
+                  <Pressable
+                    className={`flex-1 rounded-lg border px-3 py-2.5 ${fieldRole === "gardener" ? "border-blue-600 bg-blue-50" : "border-gray-300"}`}
+                    onPress={() => setFieldRole("gardener")}
+                  >
+                    <Text className="text-center text-sm font-medium">גנן</Text>
+                  </Pressable>
+                </View>
+
                 <Text className="mb-1 text-xs font-medium text-gray-700">
                   שם מלא
                 </Text>

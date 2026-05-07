@@ -1,6 +1,8 @@
 import {
+  isFieldWorkerRole,
   loginFormSchema,
   type LoginFormValues,
+  type UserRole,
 } from "@my-project/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -102,13 +104,13 @@ export default function LoginScreen() {
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    const role = profile?.role;
+    const role = profile?.role as UserRole | undefined;
 
     if (role === "super_admin") {
       router.replace("/(super-admin)/dashboard");
       return;
     }
-    if (role === "employee") {
+    if (role && isFieldWorkerRole(role)) {
       router.replace("/(employee)/assignments");
       return;
     }

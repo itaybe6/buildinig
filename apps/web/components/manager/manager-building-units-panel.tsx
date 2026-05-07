@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  addBuildingUnitsAction,
-  linkResidentToUnitAction,
-} from "@/app/(dashboard)/(manager)/buildings/building-units-actions";
+import { linkResidentToUnitAction } from "@/app/(dashboard)/(manager)/buildings/building-units-actions";
 import { InviteResidentForm } from "@/components/manager/invite-resident-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  analyzeBulkUnitNumberIssues,
-  validateAndGenerateBulkUnits,
-} from "@my-project/shared";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 export type UnitWithResidentRow = {
   id: string;
@@ -29,10 +21,6 @@ type EligibleProfile = {
   full_name: string;
   phone: string | null;
 };
-
-type RowDraft = { unit_number: string; floor: string };
-
-type AddMode = "manual" | "quick";
 
 function sortUnits(a: UnitWithResidentRow, b: UnitWithResidentRow) {
   return a.unit_number.localeCompare(b.unit_number, undefined, {
@@ -63,27 +51,12 @@ export function ManagerBuildingUnitsPanel({
   buildingId,
   units,
   eligibleProfiles,
-  suggestedFloorCount,
 }: {
   buildingId: string;
   units: UnitWithResidentRow[];
   eligibleProfiles: EligibleProfile[];
-  suggestedFloorCount?: number | null;
 }) {
   const router = useRouter();
-  const [addMode, setAddMode] = useState<AddMode>("manual");
-  const [bulkFloors, setBulkFloors] = useState(() =>
-    suggestedFloorCount != null && suggestedFloorCount > 0
-      ? String(suggestedFloorCount)
-      : ""
-  );
-  const [bulkUnitsPerFloor, setBulkUnitsPerFloor] = useState("2");
-  const [bulkStartFloor, setBulkStartFloor] = useState("1");
-  const [rows, setRows] = useState<RowDraft[]>([
-    { unit_number: "", floor: "" },
-  ]);
-  const [addError, setAddError] = useState<string | null>(null);
-  const [addPending, addTransition] = useTransition();
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const newResidentDialogRef = useRef<HTMLDialogElement>(null);
@@ -96,18 +69,6 @@ export function ManagerBuildingUnitsPanel({
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linkPending, linkTransition] = useTransition();
-
-  const [addUnitsOpen, setAddUnitsOpen] = useState(() => units.length === 0);
-  const prevUnitsLength = useRef(units.length);
-
-  useEffect(() => {
-    if (units.length === 0) {
-      setAddUnitsOpen(true);
-    } else if (prevUnitsLength.current === 0 && units.length > 0) {
-      setAddUnitsOpen(false);
-    }
-    prevUnitsLength.current = units.length;
-  }, [units.length]);
 
   useEffect(() => {
     if (!actionMenuUnitId) return;
@@ -124,28 +85,6 @@ export function ManagerBuildingUnitsPanel({
   }, [actionMenuUnitId]);
 
   const sorted = [...units].sort(sortUnits);
-
-  const bulkValidated = useMemo(() => {
-    if (addMode !== "quick") return null;
-    const fc = Number.parseInt(bulkFloors, 10);
-    const upf = Number.parseInt(bulkUnitsPerFloor, 10);
-    const startTrim = bulkStartFloor.trim();
-    const sf =
-      startTrim === "" ? undefined : Number.parseInt(bulkStartFloor, 10);
-    return validateAndGenerateBulkUnits({
-      floorCount: fc,
-      unitsPerFloor: upf,
-      startFloor: sf,
-    });
-  }, [addMode, bulkFloors, bulkUnitsPerFloor, bulkStartFloor]);
-
-  const bulkIssues = useMemo(() => {
-    if (!bulkValidated || !bulkValidated.ok) return null;
-    return analyzeBulkUnitNumberIssues(
-      bulkValidated.rows,
-      sorted.map((u) => u.unit_number)
-    );
-  }, [bulkValidated, sorted]);
 
   function closeDialog() {
     dialogRef.current?.close();
@@ -183,84 +122,6 @@ export function ManagerBuildingUnitsPanel({
     router.refresh();
   }, [router]);
 
-  function persistUnits(
-    parsed: { unit_number: string; floor_number: number | null }[]
-  ) {
-    addTransition(() => {
-      void (async () => {
-        const res = await addBuildingUnitsAction(buildingId, parsed);
-        if (!res.ok) {
-          setAddError(res.error);
-          return;
-        }
-        setRows([{ unit_number: "", floor: "" }]);
-        router.refresh();
-      })();
-    });
-  }
-
-  function onAddUnits() {
-    setAddError(null);
-    const parsed = rows
-      .map((r) => ({
-        unit_number: r.unit_number.trim(),
-        floor_number:
-          r.floor.trim() === "" ? null : Number.parseInt(r.floor, 10),
-      }))
-      .filter((r) => r.unit_number.length > 0);
-
-    if (!parsed.length) {
-      setAddError("הוסיפו לפחות דירה אחת עם מספר דירה.");
-      return;
-    }
-
-    for (const p of parsed) {
-      if (
-        p.floor_number !== null &&
-        (Number.isNaN(p.floor_number) || p.floor_number < 0)
-      ) {
-        setAddError("מספר קומה חייב להיות מספר תקין.");
-        return;
-      }
-    }
-
-    persistUnits(parsed);
-  }
-
-  function onAddQuickUnits() {
-    setAddError(null);
-    if (!bulkValidated || !bulkValidated.ok) {
-      setAddError(
-        bulkValidated && !bulkValidated.ok
-          ? bulkValidated.error
-          : "מלאו את שדות הרשת במספרים תקינים."
-      );
-      return;
-    }
-
-    const issues = bulkIssues ?? {
-      internalDuplicates: [] as string[],
-      conflictsWithExisting: [] as string[],
-    };
-
-    if (issues.internalDuplicates.length) {
-      setAddError("נוצרו כפילויות פנימיות במספרי דירה.");
-      return;
-    }
-
-    if (issues.conflictsWithExisting.length) {
-      const list = issues.conflictsWithExisting.slice(0, 10).join(", ");
-      setAddError(
-        `מספרי דירה שכבר קיימים בבניין: ${list}${
-          issues.conflictsWithExisting.length > 10 ? " …" : ""
-        }`
-      );
-      return;
-    }
-
-    persistUnits(bulkValidated.rows);
-  }
-
   function onLinkExisting() {
     if (!linkUnit || !selectedProfileId) {
       setLinkError("בחרו דייר מהרשימה.");
@@ -286,232 +147,11 @@ export function ManagerBuildingUnitsPanel({
 
   return (
     <div className="space-y-6">
-      <details
-        className="rounded-lg border bg-card [&_summary::-webkit-details-marker]:hidden"
-        open={addUnitsOpen}
-        onToggle={(e) => {
-          setAddUnitsOpen(e.currentTarget.open);
-        }}
-      >
-        <summary className="cursor-pointer px-4 py-3 font-medium hover:bg-muted/40">
-          הוספת דירות
-        </summary>
-        <div className="border-t px-4 pb-4 pt-3">
-        <div
-          className="mb-3 flex flex-wrap gap-2"
-          role="tablist"
-          aria-label="אופן הוספת דירות"
-        >
-          <Button
-            type="button"
-            variant={addMode === "manual" ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              setAddMode("manual");
-              setAddError(null);
-            }}
-          >
-            הזנה ידנית
-          </Button>
-          <Button
-            type="button"
-            variant={addMode === "quick" ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              setAddMode("quick");
-              setAddError(null);
-            }}
-          >
-            הוספה מהירה לפי רשת
-          </Button>
-        </div>
-
-        {addMode === "manual" ? (
-          <>
-            <p className="mb-3 text-sm text-muted-foreground">
-              ניתן להוסיף מספר דירות בבת אחת. לכל דירה ציינו מספר דירה ומספר
-              קומה.
-            </p>
-            <div className="space-y-3">
-              {rows.map((row, i) => (
-                <div
-                  key={i}
-                  className="flex flex-wrap items-end gap-3 border-b border-border/60 pb-3 last:border-0 last:pb-0"
-                >
-                  <div className="grid min-w-[140px] flex-1 gap-1.5">
-                    <Label htmlFor={`unit-${i}`}>מספר דירה</Label>
-                    <Input
-                      id={`unit-${i}`}
-                      value={row.unit_number}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setRows((prev) =>
-                          prev.map((r, j) =>
-                            j === i ? { ...r, unit_number: v } : r
-                          )
-                        );
-                      }}
-                      placeholder="למשל 3"
-                      dir="ltr"
-                      className="text-start"
-                    />
-                  </div>
-                  <div className="grid w-full min-w-[100px] max-w-[140px] gap-1.5">
-                    <Label htmlFor={`floor-${i}`}>קומה</Label>
-                    <Input
-                      id={`floor-${i}`}
-                      inputMode="numeric"
-                      value={row.floor}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setRows((prev) =>
-                          prev.map((r, j) =>
-                            j === i ? { ...r, floor: v } : r
-                          )
-                        );
-                      }}
-                      placeholder="אופציונלי"
-                      dir="ltr"
-                      className="text-start"
-                    />
-                  </div>
-                  {rows.length > 1 ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() =>
-                        setRows((prev) => prev.filter((_, j) => j !== i))
-                      }
-                    >
-                      הסרה
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setRows((prev) => [...prev, { unit_number: "", floor: "" }])
-                }
-              >
-                שורה נוספת
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={addPending}
-                onClick={() => onAddUnits()}
-              >
-                {addPending ? "שומר…" : "שמירת דירות"}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="mb-3 text-sm text-muted-foreground">
-              ציינו כמה קומות (ברצף), כמה דירות בכל קומה, ואופציונית את קומת
-              ההתחלה. מספרי דירה ייווצרו אוטומטית (למשל 2-01, 2-02).
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="bulk-floors">מספר קומות</Label>
-                <Input
-                  id="bulk-floors"
-                  inputMode="numeric"
-                  value={bulkFloors}
-                  onChange={(e) => setBulkFloors(e.target.value)}
-                  placeholder="למשל 5"
-                  dir="ltr"
-                  className="text-start"
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="bulk-per-floor">דירות בכל קומה</Label>
-                <Input
-                  id="bulk-per-floor"
-                  inputMode="numeric"
-                  value={bulkUnitsPerFloor}
-                  onChange={(e) => setBulkUnitsPerFloor(e.target.value)}
-                  placeholder="למשל 4"
-                  dir="ltr"
-                  className="text-start"
-                />
-              </div>
-              <div className="grid gap-1.5 sm:col-span-2">
-                <Label htmlFor="bulk-start-floor">קומת התחלה (אופציונלי)</Label>
-                <Input
-                  id="bulk-start-floor"
-                  inputMode="numeric"
-                  value={bulkStartFloor}
-                  onChange={(e) => setBulkStartFloor(e.target.value)}
-                  placeholder="ברירת מחדל 1; אפשר 0 לקרקע"
-                  dir="ltr"
-                  className="text-start"
-                />
-              </div>
-            </div>
-            <div className="mt-3 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
-              {bulkValidated && bulkValidated.ok ? (
-                <>
-                  <p className="font-medium text-foreground">
-                    ייווצרו {bulkValidated.total} דירות
-                  </p>
-                  {bulkIssues &&
-                  bulkIssues.conflictsWithExisting.length > 0 ? (
-                    <p className="mt-1 text-destructive">
-                      חפיפה עם דירות קיימות במספרים:{" "}
-                      {bulkIssues.conflictsWithExisting.slice(0, 8).join(", ")}
-                      {bulkIssues.conflictsWithExisting.length > 8 ? " …" : ""}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-muted-foreground">
-                      דוגמה:{" "}
-                      {bulkValidated.rows
-                        .slice(0, 4)
-                        .map((r) => r.unit_number)
-                        .join(", ")}
-                      {bulkValidated.total > 4 ? " …" : ""}
-                    </p>
-                  )}
-                </>
-              ) : bulkValidated && !bulkValidated.ok ? (
-                <p className="text-destructive">{bulkValidated.error}</p>
-              ) : (
-                <p className="text-muted-foreground">
-                  הזינו מספרים כדי לראות סיכום.
-                </p>
-              )}
-            </div>
-            <div className="mt-4">
-              <Button
-                type="button"
-                size="sm"
-                disabled={addPending}
-                onClick={() => onAddQuickUnits()}
-              >
-                {addPending ? "שומר…" : "שמירת דירות"}
-              </Button>
-            </div>
-          </>
-        )}
-
-        {addError ? (
-          <p className="mt-2 text-sm text-destructive">{addError}</p>
-        ) : null}
-        </div>
-      </details>
-
       <div>
         <h2 className="mb-3 text-lg font-medium">דירות</h2>
         {!sorted.length ? (
           <div className="rounded-lg border bg-card py-6 text-center text-sm text-muted-foreground">
-            אין דירות רשומות — השתמשו בטופס למעלה להוספה.
+            אין דירות רשומות. הדירות נוספות בממשק סופר־אדמין לפי הבניין.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border">

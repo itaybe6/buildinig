@@ -72,8 +72,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
     managersRes,
     buildingsListRes,
     buildingsCountRes,
-    unitsCountRes,
-    unitsListRes,
     requestsCountRes,
     openRequestsRes,
   ] = await Promise.all([
@@ -93,14 +91,6 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
       .select("id", { count: "exact", head: true })
       .eq("business_profile_id", params.id),
     supabase
-      .from("units")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", params.id),
-    supabase
-      .from("units")
-      .select("building_id, unit_number")
-      .eq("business_profile_id", params.id),
-    supabase
       .from("service_requests")
       .select("id", { count: "exact", head: true })
       .eq("business_profile_id", params.id),
@@ -115,6 +105,24 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
   const managersError = managersRes.error;
   const buildings = buildingsListRes.data;
   const buildingsError = buildingsListRes.error;
+
+  const tenantBuildingIds = (buildings ?? []).map((b) => b.id);
+
+  const unitsCountRes =
+    tenantBuildingIds.length > 0
+      ? await supabase
+          .from("units")
+          .select("id", { count: "exact", head: true })
+          .in("building_id", tenantBuildingIds)
+      : { count: 0, error: null };
+
+  const unitsListRes =
+    tenantBuildingIds.length > 0
+      ? await supabase
+          .from("units")
+          .select("building_id, unit_number")
+          .in("building_id", tenantBuildingIds)
+      : { data: [], error: null };
 
   const unitsByBuildingId = groupUnitNumbersByBuildingId(
     (unitsListRes.data ?? []) as { building_id: string; unit_number: string }[],

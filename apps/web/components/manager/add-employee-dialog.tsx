@@ -72,6 +72,20 @@ export function AddEmployeeDialog() {
           </p>
 
           <div className="grid gap-2">
+            <Label htmlFor="emp-field_role">סוג עובד</Label>
+            <select
+              id="emp-field_role"
+              name="field_role"
+              required
+              className="flex h-11 min-h-[44px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:min-h-10"
+              defaultValue="cleaner"
+            >
+              <option value="cleaner">מנקה</option>
+              <option value="gardener">גנן</option>
+            </select>
+          </div>
+
+          <div className="grid gap-2">
             <Label htmlFor="emp-full_name">שם מלא</Label>
             <Input
               id="emp-full_name"

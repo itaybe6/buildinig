@@ -109,9 +109,9 @@ export default async function ManagerDashboardPage() {
         <CardHeader>
           <CardTitle className="text-lg">הבניינים שלך</CardTitle>
           <CardDescription>
-            לחיצה על בניין פותחת פרטים ומשתמשים משויכים (
+            לחיצה על בניין פותחת פרטים, דירות ודיירים (
             <code className="rounded bg-muted px-1 text-xs">
-              profiles.building_id
+              units.resident_profile_id
             </code>
             ).
           </CardDescription>

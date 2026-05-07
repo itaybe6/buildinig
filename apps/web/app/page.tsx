@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { UserRole } from "@my-project/shared";
+import { isFieldWorkerRole, type UserRole } from "@my-project/shared";
 import { redirect } from "next/navigation";
 
 export default async function HomePage() {
@@ -26,7 +26,7 @@ export default async function HomePage() {
   if (role === "resident") {
     redirect("/home");
   }
-  if (role === "employee") {
+  if (role && isFieldWorkerRole(role)) {
     redirect("/assignments");
   }
 

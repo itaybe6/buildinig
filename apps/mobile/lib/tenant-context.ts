@@ -17,7 +17,7 @@ export async function resolveTenantScopeForUser(
 ): Promise<TenantScope> {
   const { data: profile } = await client
     .from("profiles")
-    .select("business_profile_id, building_id, unit_id")
+    .select("id, business_profile_id")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
@@ -32,10 +32,10 @@ export async function resolveTenantScopeForUser(
   let businessProfileId =
     profile?.business_profile_id ?? jwtBiz ?? null;
   if (!businessProfileId && profile) {
-    businessProfileId = await inferBusinessProfileIdFromProfileLinks(
-      client,
-      profile
-    );
+    businessProfileId = await inferBusinessProfileIdFromProfileLinks(client, {
+      id: profile.id,
+      business_profile_id: profile.business_profile_id,
+    });
   }
 
   let tenantId = businessProfileId;

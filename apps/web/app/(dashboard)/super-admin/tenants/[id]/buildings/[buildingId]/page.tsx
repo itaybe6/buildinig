@@ -1,3 +1,4 @@
+import { SuperAdminAddBuildingUnitsPanel } from "@/components/super-admin/super-admin-add-building-units-panel";
 import { requireSuperAdmin } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -19,7 +20,6 @@ type ProfileRow = Pick<
   | "role"
   | "is_active"
   | "created_at"
-  | "unit_id"
 >;
 
 type PageProps = {
@@ -103,37 +103,49 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
   const tenantName =
     (tenant as { name: string | null } | null)?.name ?? null;
 
-  const { data: profiles, error: pe } = await supabase
-    .from("profiles")
+  const { data: unitsRaw, error: ue } = await supabase
+    .from("units")
     .select(
-      "id, full_name, phone, role, is_active, created_at, unit_id"
+      "id, unit_number, floor_number, type, monthly_fee, size_sqm, resident_profile_id"
     )
-    .eq("building_id", params.buildingId)
-    .order("full_name");
+    .eq("building_id", params.buildingId);
 
-  const profileRows = (profiles ?? []) as ProfileRow[];
+  const units = (unitsRaw ?? []) as (UnitRow & {
+    resident_profile_id: string | null;
+  })[];
+
+  const residentIds = Array.from(
+    new Set(
+      units
+        .map((u) => u.resident_profile_id)
+        .filter((x): x is string => Boolean(x))
+    )
+  );
+
+  const { data: resProfiles, error: pe } =
+    residentIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, phone, role, is_active, created_at")
+          .in("id", residentIds)
+          .order("full_name")
+      : { data: [] as ProfileRow[], error: null };
+
+  const profileRows = (resProfiles ?? []) as ProfileRow[];
 
   const profilesByUnitId = new Map<string, ProfileRow[]>();
-  for (const p of profileRows) {
-    if (!p.unit_id) continue;
-    const bucket = profilesByUnitId.get(p.unit_id) ?? [];
+  for (const u of units) {
+    if (!u.resident_profile_id) continue;
+    const p = profileRows.find((x) => x.id === u.resident_profile_id);
+    if (!p) continue;
+    const bucket = profilesByUnitId.get(u.id) ?? [];
     bucket.push(p);
-    profilesByUnitId.set(p.unit_id, bucket);
+    profilesByUnitId.set(u.id, bucket);
   }
   profilesByUnitId.forEach((arr) => {
     arr.sort(sortProfilesByName);
   });
 
-  const profilesWithoutUnit = profileRows
-    .filter((p) => !p.unit_id)
-    .sort(sortProfilesByName);
-
-  const { data: unitsRaw, error: ue } = await supabase
-    .from("units")
-    .select("id, unit_number, floor_number, type, monthly_fee, size_sqm")
-    .eq("building_id", params.buildingId);
-
-  const units = (unitsRaw ?? []) as UnitRow[];
   const floorsCount = Math.max(1, building.floors_count);
 
   const unitsByFloor = Array.from({ length: floorsCount }, (_, i) => {
@@ -162,8 +174,7 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
             בניין — {building.address}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {building.city} · {profileRows.length} פרופילים עם{" "}
-            <span className="font-mono text-xs">building_id</span> זה
+            {building.city} · {profileRows.length} דיירים משויכים לדירות בבניין
           </p>
         </div>
         <Link
@@ -200,14 +211,21 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
         </CardContent>
       </Card>
 
+      <SuperAdminAddBuildingUnitsPanel
+        tenantId={params.id}
+        buildingId={params.buildingId}
+        existingUnitNumbers={units.map((u) => u.unit_number)}
+        suggestedFloorCount={building.floors_count}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">דירות לפי קומה</CardTitle>
           <CardDescription>
             לפי מספר הקומות בבניין ({floorsCount}), שדה קומה בדירות (
             <span className="font-mono text-xs">units.floor_number</span>)
-            ומשתמשים משויכים לדירה (
-            <span className="font-mono text-xs">profiles.unit_id</span>)
+            ודייר משויך מוצג לפי{" "}
+            <span className="font-mono text-xs">units.resident_profile_id</span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -312,52 +330,20 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
-            משתמשים בשכונה ללא דירה משויכת
-          </CardTitle>
+          <CardTitle className="text-lg">שיוך דייר לבניין</CardTitle>
           <CardDescription>
-            פרופילים עם <span className="font-mono text-xs">building_id</span>{" "}
-            לבניין זה וללא{" "}
-            <span className="font-mono text-xs">unit_id</span> (למשל לא צוין
-            בעת ההזמנה). יתר המשתמשים מופיעים תחת כל דירה בטבלה למעלה.
+            שיוך דייר לכתובת מתבצע רק דרך דירה — עמודה{" "}
+            <span className="font-mono text-xs">resident_profile_id</span> בטבלת
+            הדירות. אין עוד רשימת «בניין בלי דירה» ברמת הפרופיל.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {pe ? (
             <p className="text-sm text-destructive">{pe.message}</p>
-          ) : !profileRows.length ? (
-            <p className="text-sm text-muted-foreground">
-              אין פרופילים משויכים לבניין זה.
-            </p>
-          ) : profilesWithoutUnit.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              אין — כל המשתמשים משויכים לדירה או שאין משתמשים כלל.
-            </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[560px] text-sm">
-                <thead className="border-b bg-muted/50">
-                  <tr>
-                    <th className="px-3 py-2 text-start font-medium">שם</th>
-                    <th className="px-3 py-2 text-start font-medium">טלפון</th>
-                    <th className="px-3 py-2 text-start font-medium">תפקיד</th>
-                    <th className="px-3 py-2 text-start font-medium">פעיל</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profilesWithoutUnit.map((p) => (
-                    <tr key={p.id} className="border-b last:border-0">
-                      <td className="px-3 py-2 font-medium">{p.full_name}</td>
-                      <td className="px-3 py-2">{p.phone ?? "—"}</td>
-                      <td className="px-3 py-2">{p.role}</td>
-                      <td className="px-3 py-2">
-                        {p.is_active === false ? "לא" : "כן"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              אין רשימה נפרדת — השתמשו בשיוך דירה בממשק המנהל.
+            </p>
           )}
         </CardContent>
       </Card>

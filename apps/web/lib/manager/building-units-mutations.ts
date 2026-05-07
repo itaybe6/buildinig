@@ -38,7 +38,6 @@ export async function addUnitsToBuilding(
   }
 
   const inserts = trimmed.map((r) => ({
-    business_profile_id: scope.businessProfileId,
     building_id: buildingId,
     unit_number: r.unit_number,
     floor_number: r.floor_number,
@@ -62,22 +61,30 @@ export async function linkResidentProfileToUnit(
 ): Promise<UnitsMutationResult> {
   const { data: unit, error: ue } = await supabase
     .from("units")
-    .select("id, building_id, business_profile_id")
+    .select("id, building_id")
     .eq("id", unitId)
+    .maybeSingle();
+
+  const { data: bld, error: be } = await supabase
+    .from("buildings")
+    .select("business_profile_id")
+    .eq("id", buildingId)
     .maybeSingle();
 
   if (
     ue ||
+    be ||
     !unit ||
+    !bld ||
     unit.building_id !== buildingId ||
-    unit.business_profile_id !== scope.businessProfileId
+    bld.business_profile_id !== scope.businessProfileId
   ) {
     return { ok: false, error: "דירה לא נמצאה." };
   }
 
   const { data: prof, error: pe } = await supabase
     .from("profiles")
-    .select("id, role, business_profile_id, unit_id, building_id")
+    .select("id, role, business_profile_id")
     .eq("id", profileId)
     .maybeSingle();
 
@@ -90,32 +97,28 @@ export async function linkResidentProfileToUnit(
     return { ok: false, error: "פרופיל לא נמצא או שאינו דייר." };
   }
 
-  const buildingOk =
-    prof.building_id === null || prof.building_id === buildingId;
-  if (!buildingOk) {
-    return {
-      ok: false,
-      error: "הדייר משויך לבניין אחר — יש לשחרר שיוך לפני קישור לדירה זו.",
-    };
+  const { error: clearProfileErr } = await supabase
+    .from("units")
+    .update({ resident_profile_id: null })
+    .eq("resident_profile_id", profileId);
+
+  if (clearProfileErr) {
+    return { ok: false, error: clearProfileErr.message };
   }
 
-  const { error: clearErr } = await supabase
-    .from("profiles")
-    .update({ unit_id: null })
-    .eq("unit_id", unitId)
-    .neq("id", profileId);
+  const { error: clearUnitErr } = await supabase
+    .from("units")
+    .update({ resident_profile_id: null })
+    .eq("id", unitId);
 
-  if (clearErr) {
-    return { ok: false, error: clearErr.message };
+  if (clearUnitErr) {
+    return { ok: false, error: clearUnitErr.message };
   }
 
   const { error: up } = await supabase
-    .from("profiles")
-    .update({
-      unit_id: unitId,
-      building_id: buildingId,
-    })
-    .eq("id", profileId);
+    .from("units")
+    .update({ resident_profile_id: profileId })
+    .eq("id", unitId);
 
   if (up) {
     return { ok: false, error: up.message };

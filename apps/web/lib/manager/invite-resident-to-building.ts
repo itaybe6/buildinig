@@ -15,7 +15,7 @@ function duplicateEmailMessage(msg: string): string {
 }
 
 /**
- * יוצה משתמש Auth + פרופיל דייר משויך לבניין (דורש SUPABASE_SERVICE_ROLE_KEY).
+ * יוצר משתמש Auth + פרופיל דייר; אם נבחרה דירה — מקשר ב־`units.resident_profile_id`.
  */
 export async function inviteResidentToBuilding(params: {
   businessProfileId: string;
@@ -24,7 +24,6 @@ export async function inviteResidentToBuilding(params: {
   email: string;
   password: string;
   phone?: string;
-  /** משייך את הדייר שנוצר לדירה ספציפית (profiles.unit_id) */
   unitId?: string;
 }): Promise<InviteResidentResult> {
   if (!hasServiceRoleKey()) {
@@ -53,23 +52,20 @@ export async function inviteResidentToBuilding(params: {
   if (params.unitId) {
     const { data: unit, error: ue } = await admin
       .from("units")
-      .select("id, building_id, business_profile_id")
+      .select("id, building_id")
       .eq("id", params.unitId)
       .maybeSingle();
     if (ue || !unit) {
       return { ok: false, error: "דירה לא נמצאה." };
     }
-    if (
-      unit.building_id !== params.buildingId ||
-      unit.business_profile_id !== params.businessProfileId
-    ) {
+    if (unit.building_id !== params.buildingId) {
       return { ok: false, error: "הדירה אינה שייכת לבניין זה." };
     }
     resolvedUnitId = unit.id;
     await admin
-      .from("profiles")
-      .update({ unit_id: null })
-      .eq("unit_id", resolvedUnitId);
+      .from("units")
+      .update({ resident_profile_id: null })
+      .eq("id", resolvedUnitId);
   }
 
   const email = params.email.trim().toLowerCase();
@@ -98,20 +94,34 @@ export async function inviteResidentToBuilding(params: {
     };
   }
 
-  const { error: pe } = await admin.from("profiles").insert({
-    auth_user_id: authData.user.id,
-    business_profile_id: params.businessProfileId,
-    building_id: params.buildingId,
-    unit_id: resolvedUnitId,
-    full_name: params.fullName.trim(),
-    phone: params.phone?.trim() || null,
-    role: "resident",
-    is_active: true,
-  });
+  const { data: ins, error: pe } = await admin
+    .from("profiles")
+    .insert({
+      auth_user_id: authData.user.id,
+      business_profile_id: params.businessProfileId,
+      full_name: params.fullName.trim(),
+      phone: params.phone?.trim() || null,
+      role: "resident",
+      is_active: true,
+    })
+    .select("id")
+    .single();
 
-  if (pe) {
+  if (pe || !ins) {
     await admin.auth.admin.deleteUser(authData.user.id);
-    return { ok: false, error: pe.message };
+    return { ok: false, error: pe?.message ?? "שגיאת פרופיל." };
+  }
+
+  if (resolvedUnitId) {
+    const { error: ue2 } = await admin
+      .from("units")
+      .update({ resident_profile_id: ins.id })
+      .eq("id", resolvedUnitId);
+    if (ue2) {
+      await admin.from("profiles").delete().eq("id", ins.id);
+      await admin.auth.admin.deleteUser(authData.user.id);
+      return { ok: false, error: ue2.message };
+    }
   }
 
   return { ok: true };

@@ -6,6 +6,8 @@ export const userRoleSchema = z.enum([
   "manager",
   "employee",
   "resident",
+  "cleaner",
+  "gardener",
 ]);
 
 /** Mirrors Postgres enum `request_status` */

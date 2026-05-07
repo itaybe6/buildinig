@@ -6,27 +6,27 @@ export type BulkGeneratedUnitRow = {
   floor_number: number;
 };
 
-function padAptIndex(n: number, unitsPerFloor: number): string {
-  const width = Math.max(2, String(unitsPerFloor).length);
-  return String(n).padStart(width, "0");
-}
-
 /**
- * יוצר רשימת דירות לפי רשת קומות × דירות לקומה.
- * מספר דירה: `קומה-מספר` עם ריפוד (למשל 2-01 … 2-04).
+ * יוצר רשימת דירות לפי טווח קומות (כולל) × דירות לקומה.
+ * מספר דירה: `קומה-מספר` עם ריפוד לפי הספרה האחרונה בטווח (למשל 2-05 … 2-08).
+ * `apartmentStartIndex` — מספר הדירה הראשון בכל קומה (ברירת מחדל 1).
  */
 export function bulkGenerateUnitRows(params: {
-  floorCount: number;
+  floorFrom: number;
+  floorTo: number;
   unitsPerFloor: number;
-  /** ברירת מחדל 1 */
-  startFloor?: number;
+  /** מספר דירה ראשון בכל קומה (ברירת מחדל 1) */
+  apartmentStartIndex?: number;
 }): BulkGeneratedUnitRow[] {
-  const startFloor = params.startFloor ?? 1;
+  const start = params.apartmentStartIndex ?? 1;
+  const end = start + params.unitsPerFloor - 1;
+  const padWidth = Math.max(2, String(end).length);
   const rows: BulkGeneratedUnitRow[] = [];
-  for (let f = startFloor; f < startFloor + params.floorCount; f++) {
-    for (let a = 1; a <= params.unitsPerFloor; a++) {
+  const { floorFrom: from, floorTo: to } = params;
+  for (let f = from; f <= to; f++) {
+    for (let a = start; a <= end; a++) {
       rows.push({
-        unit_number: `${f}-${padAptIndex(a, params.unitsPerFloor)}`,
+        unit_number: `${f}-${String(a).padStart(padWidth, "0")}`,
         floor_number: f,
       });
     }
@@ -34,24 +34,58 @@ export function bulkGenerateUnitRows(params: {
   return rows;
 }
 
+export type BulkGenerationPreview = {
+  floorFrom: number;
+  floorTo: number;
+  /** מספר הדירה (סיומת) הראשון והאחרון בכל קומה */
+  apartmentSuffixFrom: number;
+  apartmentSuffixTo: number;
+  /** לדוגמה: המספר הקטן והגדול ביותר שייווצרו */
+  firstUnitNumber: string;
+  lastUnitNumber: string;
+};
+
 export type ValidateAndGenerateBulkUnitsResult =
-  | { ok: true; rows: BulkGeneratedUnitRow[]; total: number }
+  | {
+      ok: true;
+      rows: BulkGeneratedUnitRow[];
+      total: number;
+      preview: BulkGenerationPreview;
+    }
   | { ok: false; error: string };
 
 export function validateAndGenerateBulkUnits(params: {
-  floorCount: number;
+  floorFrom: number;
+  floorTo: number;
   unitsPerFloor: number;
-  startFloor?: number;
+  /** מספר דירה ראשון בכל קומה (ברירת מחדל 1) */
+  apartmentStartIndex?: number;
 }): ValidateAndGenerateBulkUnitsResult {
-  const fc = Math.floor(Number(params.floorCount));
+  const ff = Math.floor(Number(params.floorFrom));
+  const ft = Math.floor(Number(params.floorTo));
   const upf = Math.floor(Number(params.unitsPerFloor));
-  const sf =
-    params.startFloor === undefined || params.startFloor === null
+  const aptStart =
+    params.apartmentStartIndex === undefined || params.apartmentStartIndex === null
       ? 1
-      : Math.floor(Number(params.startFloor));
+      : Math.floor(Number(params.apartmentStartIndex));
 
-  if (!Number.isFinite(fc) || fc < 1) {
-    return { ok: false, error: "מספר קומות חייב להיות שלם של לפחות 1." };
+  if (!Number.isFinite(ff) || ff < 0) {
+    return {
+      ok: false,
+      error: "«מקומה» חייב להיות מספר תקין (0 ומעלה).",
+    };
+  }
+  if (!Number.isFinite(ft) || ft < 0) {
+    return {
+      ok: false,
+      error: "«עד קומה» חייב להיות מספר תקין (0 ומעלה).",
+    };
+  }
+  if (ft < ff) {
+    return {
+      ok: false,
+      error: "«עד קומה» חייב להיות גדול או שווה ל«מקומה».",
+    };
   }
   if (!Number.isFinite(upf) || upf < 1) {
     return {
@@ -59,14 +93,15 @@ export function validateAndGenerateBulkUnits(params: {
       error: "מספר דירות לכל קומה חייב להיות שלם של לפחות 1.",
     };
   }
-  if (!Number.isFinite(sf) || sf < 0) {
+  if (!Number.isFinite(aptStart) || aptStart < 1) {
     return {
       ok: false,
-      error: "קומת התחלה חייבת להיות מספר תקין (0 ומעלה).",
+      error: "«מספר דירה ראשון» בכל קומה חייב להיות שלם של לפחות 1.",
     };
   }
 
-  const total = fc * upf;
+  const floorSpan = ft - ff + 1;
+  const total = floorSpan * upf;
   if (total > BULK_ADD_UNITS_MAX) {
     return {
       ok: false,
@@ -75,11 +110,23 @@ export function validateAndGenerateBulkUnits(params: {
   }
 
   const rows = bulkGenerateUnitRows({
-    floorCount: fc,
+    floorFrom: ff,
+    floorTo: ft,
     unitsPerFloor: upf,
-    startFloor: sf,
+    apartmentStartIndex: aptStart,
   });
-  return { ok: true, rows, total };
+
+  const aptEnd = aptStart + upf - 1;
+  const preview: BulkGenerationPreview = {
+    floorFrom: ff,
+    floorTo: ft,
+    apartmentSuffixFrom: aptStart,
+    apartmentSuffixTo: aptEnd,
+    firstUnitNumber: rows[0]?.unit_number ?? "",
+    lastUnitNumber: rows[rows.length - 1]?.unit_number ?? "",
+  };
+
+  return { ok: true, rows, total, preview };
 }
 
 function normUnitNumber(s: string): string {

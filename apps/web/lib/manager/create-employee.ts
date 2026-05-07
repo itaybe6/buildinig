@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  type FieldStaffRole,
   normalizeIsraelPhoneLocalDigits,
   profilePhoneLookupVariants,
 } from "@my-project/shared";
@@ -38,6 +39,7 @@ export async function createEmployeeForBusiness(params: {
   fullName: string;
   phoneRaw: string;
   password: string;
+  fieldRole: FieldStaffRole;
 }): Promise<CreateEmployeeResult> {
   if (!hasServiceRoleKey()) {
     return {
@@ -103,11 +105,9 @@ export async function createEmployeeForBusiness(params: {
   const { error: pe } = await admin.from("profiles").insert({
     auth_user_id: authData.user.id,
     business_profile_id: params.businessProfileId,
-    building_id: null,
-    unit_id: null,
     full_name: params.fullName.trim(),
     phone: phoneLocal,
-    role: "employee",
+    role: params.fieldRole,
     is_active: true,
   });
 

@@ -26,6 +26,7 @@ type UnitRow = {
   unit_number: string;
   floor_number: number | null;
   building_id: string;
+  resident_profile_id: string | null;
 };
 
 function displayPhone(r: ResidentRow): string {
@@ -63,30 +64,37 @@ export default function ManagerResidentsScreen() {
         return;
       }
 
-      const [bRes, rRes, uRes] = await Promise.all([
-        supabase
-          .from("buildings")
-          .select("id, address, city")
-          .eq("business_profile_id", businessProfileId)
-          .order("address"),
-        supabase
-          .from("profiles")
-          .select(
-            "id, full_name, phone, is_active, building_id, unit_id"
-          )
-          .eq("business_profile_id", businessProfileId)
-          .eq("role", "resident")
-          .order("full_name"),
-        supabase
-          .from("units")
-          .select("id, unit_number, floor_number, building_id")
-          .eq("business_profile_id", businessProfileId),
-      ]);
+      const bRes = await supabase
+        .from("buildings")
+        .select("id, address, city")
+        .eq("business_profile_id", businessProfileId)
+        .order("address");
 
       if (bRes.error) {
         setErr(bRes.error.message);
         return;
       }
+
+      const buildingList = (bRes.data ?? []) as BuildingRow[];
+      const buildingIds = buildingList.map((b) => b.id);
+
+      const [rRes, uRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, full_name, phone, is_active")
+          .eq("business_profile_id", businessProfileId)
+          .eq("role", "resident")
+          .order("full_name"),
+        buildingIds.length > 0
+          ? supabase
+              .from("units")
+              .select(
+                "id, unit_number, floor_number, building_id, resident_profile_id"
+              )
+              .in("building_id", buildingIds)
+          : { data: [] as UnitRow[], error: null },
+      ]);
+
       if (rRes.error) {
         setErr(rRes.error.message);
         return;
@@ -96,9 +104,25 @@ export default function ManagerResidentsScreen() {
         return;
       }
 
-      setBuildings((bRes.data ?? []) as BuildingRow[]);
-      setResidents((rRes.data ?? []) as ResidentRow[]);
-      setUnits((uRes.data ?? []) as UnitRow[]);
+      const unitsList = (uRes.data ?? []) as UnitRow[];
+      const unitByResidentId = new Map(
+        unitsList
+          .filter((u) => u.resident_profile_id)
+          .map((u) => [u.resident_profile_id as string, u] as const)
+      );
+
+      const residentRows: ResidentRow[] = (rRes.data ?? []).map((p) => {
+        const u = unitByResidentId.get(p.id);
+        return {
+          ...p,
+          building_id: u?.building_id ?? null,
+          unit_id: u?.id ?? null,
+        };
+      });
+
+      setBuildings(buildingList);
+      setResidents(residentRows);
+      setUnits(unitsList);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "שגיאה");
     } finally {
@@ -189,13 +213,13 @@ export default function ManagerResidentsScreen() {
   return (
     <ScrollView className="flex-1 bg-white px-4 pt-4">
       <Text className="mb-4 text-sm text-gray-600">
-        דיירי הארגון לפי בניין; בכל כרטיס מוצגת הדירה המשויכת.
+        דיירי הארגון לפי בניין; שיוך דירה ב־units.resident_profile_id.
       </Text>
 
       {unassigned.length > 0 ? (
         <View className="mb-6">
           <Text className="mb-2 text-base font-semibold text-slate-800">
-            ללא שיוך בניין
+            ללא דירה משויכת
           </Text>
           {renderRows(unassigned)}
         </View>

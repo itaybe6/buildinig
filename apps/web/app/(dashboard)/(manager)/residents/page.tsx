@@ -25,7 +25,7 @@ export default async function ManagerResidentsPage() {
 
   const supabase = createClient();
 
-  const [buildingsRes, residentsRes, unitsRes] = await Promise.all([
+  const [buildingsRes, residentsRes] = await Promise.all([
     supabase
       .from("buildings")
       .select("id, address, city")
@@ -33,32 +33,46 @@ export default async function ManagerResidentsPage() {
       .order("address"),
     supabase
       .from("profiles")
-      .select(
-        "id, full_name, phone, is_active, building_id, unit_id"
-      )
+      .select("id, full_name, phone, is_active")
       .eq("business_profile_id", ctx.businessProfileId)
       .eq("role", "resident")
       .order("full_name"),
-    supabase
-      .from("units")
-      .select("id, unit_number, floor_number, building_id")
-      .eq("business_profile_id", ctx.businessProfileId),
   ]);
 
   const buildingsError = buildingsRes.error;
   const residentsError = residentsRes.error;
-  const unitsError = unitsRes.error;
 
-  const error =
-    buildingsError ?? residentsError ?? unitsError ?? null;
+  const error = buildingsError ?? residentsError ?? null;
 
   const buildings = buildingsRes.data ?? [];
-  const residents = (residentsRes.data ?? []) as ResidentRow[];
-  const units = unitsRes.data ?? [];
+  const residentProfiles = residentsRes.data ?? [];
 
-  const unitById = new Map(
-    units.map((u) => [u.id, u] as const)
+  const buildingIds = buildings.map((b) => b.id);
+  const { data: unitsData } =
+    buildingIds.length > 0
+      ? await supabase
+          .from("units")
+          .select("id, unit_number, floor_number, building_id, resident_profile_id")
+          .in("building_id", buildingIds)
+      : { data: [] as { id: string; unit_number: string; floor_number: number | null; building_id: string; resident_profile_id: string | null }[] };
+
+  const units = unitsData ?? [];
+  const unitByResidentId = new Map(
+    units
+      .filter((u) => u.resident_profile_id)
+      .map((u) => [u.resident_profile_id as string, u] as const)
   );
+
+  const residents: ResidentRow[] = residentProfiles.map((p) => {
+    const u = unitByResidentId.get(p.id);
+    return {
+      ...p,
+      building_id: u?.building_id ?? null,
+      unit_id: u?.id ?? null,
+    };
+  });
+
+  const unitById = new Map(units.map((u) => [u.id, u] as const));
 
   const displayPhone = (r: ResidentRow) =>
     r.phone?.trim() || "—";
@@ -82,8 +96,11 @@ export default async function ManagerResidentsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">דיירים</h1>
         <p className="text-sm text-muted-foreground">
-          כל הדיירים בארגון, מחולקים לפי בניין. בכל שורה מופיעה הדירה המשויכת
-          (אם הוגדרה).
+          כל הדיירים בארגון, מחולקים לפי בניין (שיוך דרך דירה ב־
+          <code className="rounded bg-muted px-1 text-xs">
+            units.resident_profile_id
+          </code>
+          ).
         </p>
       </div>
 
@@ -108,7 +125,7 @@ export default async function ManagerResidentsPage() {
           {unassigned.length > 0 ? (
             <section>
               <h2 className="mb-3 text-lg font-medium">
-                ללא שיוך בניין
+                ללא דירה משויכת
               </h2>
               <div className="overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-[640px] text-sm">

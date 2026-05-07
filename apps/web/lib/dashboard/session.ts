@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   businessProfileIdFromJwtAppMetadata,
   inferBusinessProfileIdFromProfileLinks,
+  isFieldWorkerRole,
   type UserRole,
 } from "@my-project/shared";
 import { redirect } from "next/navigation";
@@ -29,8 +30,6 @@ type ProfileRowWithBp = {
   full_name: string;
   role: UserRole;
   business_profile_id: string | null;
-  building_id: string | null;
-  unit_id: string | null;
   business_profiles:
     | { name: string; logo_url: string | null }
     | { name: string; logo_url: string | null }[]
@@ -58,7 +57,7 @@ export const getAuthProfile = cache(
     const { data: row, error } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, role, business_profile_id, building_id, unit_id, business_profiles(name, logo_url)"
+        "id, full_name, role, business_profile_id, business_profiles(name, logo_url)"
       )
       .eq("auth_user_id", user.id)
       .maybeSingle();
@@ -79,7 +78,7 @@ export const getAuthProfile = cache(
     if (!businessProfileId) {
       businessProfileId = await inferBusinessProfileIdFromProfileLinks(
         supabase,
-        typed
+        { id: typed.id, business_profile_id: typed.business_profile_id }
       );
     }
 
@@ -116,7 +115,7 @@ export async function requireAuthProfile(): Promise<AuthProfile> {
   return profile;
 }
 
-/** ארגון פעיל: פרופיל / JWT (app_metadata) / קישור בניין–יחידה; אחר כך BUSINESS_ID כמו במובייל */
+/** ארגון פעיל: פרופיל / JWT (app_metadata) / דירה כדייר; אחר כך BUSINESS_ID כמו במובייל */
 export function resolveActiveTenantId(profile: AuthProfile): string | null {
   if (profile.businessProfileId) return profile.businessProfileId;
   return tryGetBusinessId();
@@ -154,7 +153,7 @@ function tenantScopeFromProfile(profile: AuthProfile): ManagerTenantContext {
 export async function getManagerTenantContext(): Promise<ManagerTenantContext> {
   const profile = await requireAuthProfile();
   if (profile.role === "resident") redirect("/home");
-  if (profile.role === "employee") redirect("/assignments");
+  if (isFieldWorkerRole(profile.role)) redirect("/assignments");
   return tenantScopeFromProfile(profile);
 }
 
@@ -168,7 +167,7 @@ export async function getResidentTenantContext(): Promise<ManagerTenantContext> 
 /** ממשק עובד — אותו סינון tenant כמו מנהל */
 export async function getEmployeeTenantContext(): Promise<ManagerTenantContext> {
   const profile = await requireAuthProfile();
-  if (profile.role !== "employee") redirect("/dashboard");
+  if (!isFieldWorkerRole(profile.role)) redirect("/dashboard");
   return tenantScopeFromProfile(profile);
 }
 

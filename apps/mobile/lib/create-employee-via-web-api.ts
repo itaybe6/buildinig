@@ -5,6 +5,7 @@ export async function createEmployeeViaWebApi(input: {
   full_name: string;
   phone: string;
   password: string;
+  field_role: "cleaner" | "gardener";
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const origin = webApiOrigin();
   if (!origin) {
@@ -32,6 +33,7 @@ export async function createEmployeeViaWebApi(input: {
       full_name: input.full_name,
       phone: input.phone,
       password: input.password,
+      field_role: input.field_role,
     }),
   });
 

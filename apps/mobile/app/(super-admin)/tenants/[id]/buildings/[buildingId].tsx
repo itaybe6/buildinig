@@ -64,11 +64,33 @@ export default function SuperAdminBuildingDetailScreen() {
       .eq("id", tid)
       .maybeSingle();
 
-    const { data: plist, error: pe } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone, role, is_active")
-      .eq("building_id", bid)
-      .order("full_name");
+    const { data: unitRows, error: ue } = await supabase
+      .from("units")
+      .select("resident_profile_id")
+      .eq("building_id", bid);
+
+    if (ue) {
+      setLoading(false);
+      Alert.alert("שגיאה", ue.message);
+      return;
+    }
+
+    const pids = [
+      ...new Set(
+        (unitRows ?? [])
+          .map((x) => x.resident_profile_id)
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+
+    const { data: plist, error: pe } =
+      pids.length > 0
+        ? await supabase
+            .from("profiles")
+            .select("id, full_name, phone, role, is_active")
+            .in("id", pids)
+            .order("full_name")
+        : { data: [] as ProfileRow[], error: null };
 
     setLoading(false);
 
@@ -109,7 +131,7 @@ export default function SuperAdminBuildingDetailScreen() {
 
         <Text className="mb-1 text-xl font-bold text-gray-900">{address}</Text>
         <Text className="mb-6 text-sm text-gray-600">
-          {city} · קומות {floors} · {profiles.length} פרופילים (building_id)
+          {city} · קומות {floors} · {profiles.length} דיירים בדירות
         </Text>
 
         <Text className="mb-2 font-semibold text-gray-900">

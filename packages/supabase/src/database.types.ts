@@ -71,8 +71,6 @@ export type Database = {
           id: string;
           auth_user_id: string | null;
           business_profile_id: string | null;
-          building_id: string | null;
-          unit_id: string | null;
           full_name: string;
           phone: string | null;
           password_hash: string | null;
@@ -86,8 +84,6 @@ export type Database = {
           id?: string;
           auth_user_id?: string | null;
           business_profile_id?: string | null;
-          building_id?: string | null;
-          unit_id?: string | null;
           full_name: string;
           phone?: string | null;
           password_hash?: string | null;
@@ -101,8 +97,6 @@ export type Database = {
           id?: string;
           auth_user_id?: string | null;
           business_profile_id?: string | null;
-          building_id?: string | null;
-          unit_id?: string | null;
           full_name?: string;
           phone?: string | null;
           password_hash?: string | null;
@@ -112,22 +106,7 @@ export type Database = {
           is_active?: boolean | null;
           created_at?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: "profiles_building_id_fkey";
-            columns: ["building_id"];
-            isOneToOne: false;
-            referencedRelation: "buildings";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "profiles_unit_id_fkey";
-            columns: ["unit_id"];
-            isOneToOne: false;
-            referencedRelation: "units";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
       buildings: {
         Row: {
@@ -168,35 +147,43 @@ export type Database = {
       units: {
         Row: {
           id: string;
-          business_profile_id: string;
           building_id: string;
           unit_number: string;
           floor_number: number | null;
           type: string | null;
           size_sqm: number | null;
           monthly_fee: string | null;
+          resident_profile_id: string | null;
         };
         Insert: {
           id?: string;
-          business_profile_id: string;
           building_id: string;
           unit_number: string;
           floor_number?: number | null;
           type?: string | null;
           size_sqm?: number | null;
           monthly_fee?: string | null;
+          resident_profile_id?: string | null;
         };
         Update: {
           id?: string;
-          business_profile_id?: string;
           building_id?: string;
           unit_number?: string;
           floor_number?: number | null;
           type?: string | null;
           size_sqm?: number | null;
           monthly_fee?: string | null;
+          resident_profile_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "units_resident_profile_id_fkey";
+            columns: ["resident_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       service_requests: {
         Row: {
@@ -605,7 +592,13 @@ export type Database = {
       request_priority: "low" | "medium" | "high" | "urgent";
       request_status: "open" | "assigned" | "in_progress" | "resolved" | "closed";
       resident_status: "active" | "former";
-      user_role: "super_admin" | "manager" | "employee" | "resident";
+      user_role:
+        | "super_admin"
+        | "manager"
+        | "employee"
+        | "resident"
+        | "cleaner"
+        | "gardener";
     };
     CompositeTypes: Record<string, never>;
   };

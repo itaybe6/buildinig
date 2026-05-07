@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  isFieldWorkerRole,
   loginFormSchema,
   type LoginFormValues,
   type UserRole,
@@ -48,7 +49,7 @@ export default function LoginPage() {
         ? "/super-admin/dashboard"
         : role === "resident"
           ? "/home"
-          : role === "employee"
+          : role && isFieldWorkerRole(role)
             ? "/assignments"
             : "/dashboard";
     /** טעינה מלאה — מבטיחה שקוקיות הסשן (שנקבעו ע"י ה-API) יישלחו לשרת */

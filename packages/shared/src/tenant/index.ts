@@ -74,49 +74,26 @@ export function businessProfileIdFromJwtAppMetadata(
   return typeof v === "string" && v.length > 0 ? v : null;
 }
 
-/** When `profiles.business_profile_id` is null, derive tenant from linked building or unit. */
+/** When `profiles.business_profile_id` is null, derive tenant from a unit that lists this profile as resident. */
 export async function inferBusinessProfileIdFromProfileLinks(
   client: SupabaseClient<Database>,
-  row: Pick<
-    Database["public"]["Tables"]["profiles"]["Row"],
-    "business_profile_id" | "building_id" | "unit_id"
-  >
+  row: Pick<Database["public"]["Tables"]["profiles"]["Row"], "id" | "business_profile_id">
 ): Promise<string | null> {
   if (row.business_profile_id) {
     return row.business_profile_id;
   }
-  if (row.building_id && row.unit_id) {
-    const [{ data: bRow }, { data: uRow }] = await Promise.all([
-      client
-        .from("buildings")
-        .select("business_profile_id")
-        .eq("id", row.building_id)
-        .maybeSingle(),
-      client
-        .from("units")
-        .select("business_profile_id")
-        .eq("id", row.unit_id)
-        .maybeSingle(),
-    ]);
-    if (bRow?.business_profile_id) return bRow.business_profile_id;
-    if (uRow?.business_profile_id) return uRow.business_profile_id;
+  const { data: unitRow } = await client
+    .from("units")
+    .select("building_id")
+    .eq("resident_profile_id", row.id)
+    .maybeSingle();
+  if (!unitRow?.building_id) {
     return null;
   }
-  if (row.building_id) {
-    const { data } = await client
-      .from("buildings")
-      .select("business_profile_id")
-      .eq("id", row.building_id)
-      .maybeSingle();
-    if (data?.business_profile_id) return data.business_profile_id;
-  }
-  if (row.unit_id) {
-    const { data } = await client
-      .from("units")
-      .select("business_profile_id")
-      .eq("id", row.unit_id)
-      .maybeSingle();
-    if (data?.business_profile_id) return data.business_profile_id;
-  }
-  return null;
+  const { data: bRow } = await client
+    .from("buildings")
+    .select("business_profile_id")
+    .eq("id", unitRow.building_id)
+    .maybeSingle();
+  return bRow?.business_profile_id ?? null;
 }

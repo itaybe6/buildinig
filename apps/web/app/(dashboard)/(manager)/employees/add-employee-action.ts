@@ -2,6 +2,7 @@
 
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createEmployeeForBusiness } from "@/lib/manager/create-employee";
+import type { FieldStaffRole } from "@my-project/shared";
 import { revalidatePath } from "next/cache";
 
 export type AddEmployeeActionState =
@@ -20,11 +21,16 @@ export async function addEmployeeAction(
     return { ok: false, error: "פעולה זו זמינה למנהלים בלבד." };
   }
 
+  const rawRole = String(formData.get("field_role") ?? "").trim();
+  const fieldRole: FieldStaffRole =
+    rawRole === "gardener" ? "gardener" : "cleaner";
+
   const result = await createEmployeeForBusiness({
     businessProfileId: ctx.businessProfileId,
     fullName: String(formData.get("full_name") ?? ""),
     phoneRaw: String(formData.get("phone") ?? ""),
     password: String(formData.get("password") ?? ""),
+    fieldRole,
   });
 
   if (!result.ok) {

@@ -17,6 +17,8 @@ export const USER_ROLE_LABEL: Record<UserRole, string> = {
   manager: "מנהל נכסים",
   employee: "עובד שטח",
   resident: "דייר",
+  cleaner: "מנקה",
+  gardener: "גנן",
 };
 
 export const REQUEST_STATUS_LABEL: Record<RequestStatus, string> = {

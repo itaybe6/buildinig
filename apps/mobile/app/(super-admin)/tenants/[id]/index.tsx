@@ -115,15 +115,19 @@ export default function SuperAdminTenantDetailScreen() {
       .eq("business_profile_id", tid)
       .order("full_name");
 
+    const buildingIds = (blist ?? []).map((b) => b.id);
+
     const [bc, uc, rc, orc, unitsList] = await Promise.all([
       supabase
         .from("buildings")
         .select("id", { count: "exact", head: true })
         .eq("business_profile_id", tid),
-      supabase
-        .from("units")
-        .select("id", { count: "exact", head: true })
-        .eq("business_profile_id", tid),
+      buildingIds.length > 0
+        ? supabase
+            .from("units")
+            .select("id", { count: "exact", head: true })
+            .in("building_id", buildingIds)
+        : Promise.resolve({ count: 0, error: null }),
       supabase
         .from("service_requests")
         .select("id", { count: "exact", head: true })
@@ -133,10 +137,12 @@ export default function SuperAdminTenantDetailScreen() {
         .select("id", { count: "exact", head: true })
         .eq("business_profile_id", tid)
         .in("status", ["open", "assigned", "in_progress"]),
-      supabase
-        .from("units")
-        .select("building_id, unit_number")
-        .eq("business_profile_id", tid),
+      buildingIds.length > 0
+        ? supabase
+            .from("units")
+            .select("building_id, unit_number")
+            .in("building_id", buildingIds)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     setLoading(false);

@@ -1,8 +1,9 @@
 "use server";
 
-import { getManagerTenantContext } from "@/lib/dashboard/session";
+import { requireSuperAdmin } from "@/lib/dashboard/session";
 import {
-  linkResidentProfileToUnit,
+  addUnitsToBuilding,
+  type UnitRowInput,
 } from "@/lib/manager/building-units-mutations";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -11,27 +12,25 @@ export type UnitsActionState =
   | { ok: true }
   | { ok: false; error: string };
 
-export async function linkResidentToUnitAction(
+export async function addBuildingUnitsSuperAdminAction(
+  tenantId: string,
   buildingId: string,
-  unitId: string,
-  profileId: string
+  units: UnitRowInput[]
 ): Promise<UnitsActionState> {
-  const ctx = await getManagerTenantContext();
-  if (!ctx.ok) {
-    return { ok: false, error: "אין הרשאת מנהל או חסר פרופיל עסק." };
-  }
+  await requireSuperAdmin();
 
   const supabase = createClient();
-  const result = await linkResidentProfileToUnit(
+  const result = await addUnitsToBuilding(
     supabase,
-    { businessProfileId: ctx.businessProfileId },
+    { businessProfileId: tenantId },
     buildingId,
-    unitId,
-    profileId
+    units
   );
 
   if (!result.ok) return result;
 
+  revalidatePath(`/super-admin/tenants/${tenantId}/buildings/${buildingId}`);
+  revalidatePath(`/super-admin/tenants/${tenantId}`);
   revalidatePath(`/buildings/${buildingId}`);
   return { ok: true };
 }

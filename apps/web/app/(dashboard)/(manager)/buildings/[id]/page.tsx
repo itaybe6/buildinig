@@ -42,33 +42,36 @@ export default async function BuildingDetailPage({
 
   if (!building) notFound();
 
-  const { data: linkedProfiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, phone, role, is_active, building_id")
-    .eq("business_profile_id", ctx.businessProfileId)
-    .eq("building_id", params.id)
-    .order("full_name");
-
   const { data: units } = await supabase
     .from("units")
-    .select("id, unit_number, floor_number, monthly_fee, type")
+    .select("id, unit_number, floor_number, monthly_fee, type, resident_profile_id")
     .eq("building_id", params.id)
-    .eq("business_profile_id", ctx.businessProfileId)
     .order("unit_number");
 
-  const { data: unitResidents } = await supabase
-    .from("profiles")
-    .select("id, full_name, phone, unit_id")
-    .eq("business_profile_id", ctx.businessProfileId)
-    .eq("building_id", params.id)
-    .not("unit_id", "is", null);
+  const residentIds = Array.from(
+    new Set(
+      (units ?? [])
+        .map((u) => u.resident_profile_id)
+        .filter((x): x is string => Boolean(x))
+    )
+  );
 
-  const residentByUnitId = new Map(
-    (unitResidents ?? []).map((p) => [p.unit_id as string, p])
+  const { data: residentRows } =
+    residentIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, phone")
+          .in("id", residentIds)
+      : { data: [] as { id: string; full_name: string; phone: string | null }[] };
+
+  const profileById = new Map(
+    (residentRows ?? []).map((p) => [p.id, p] as const)
   );
 
   const unitsWithResident = (units ?? []).map((u) => {
-    const r = residentByUnitId.get(u.id);
+    const r = u.resident_profile_id
+      ? profileById.get(u.resident_profile_id)
+      : undefined;
     return {
       ...u,
       resident: r
@@ -77,17 +80,47 @@ export default async function BuildingDetailPage({
     };
   });
 
-  const { data: eligibleRaw } = await supabase
+  const { data: orgBuildings } = await supabase
+    .from("buildings")
+    .select("id")
+    .eq("business_profile_id", ctx.businessProfileId);
+
+  const orgBuildingIds = (orgBuildings ?? []).map((b) => b.id);
+  const { data: orgUnits } =
+    orgBuildingIds.length > 0
+      ? await supabase
+          .from("units")
+          .select("resident_profile_id")
+          .in("building_id", orgBuildingIds)
+      : { data: [] as { resident_profile_id: string | null }[] };
+
+  const assignedResidentIds = new Set(
+    (orgUnits ?? [])
+      .map((x) => x.resident_profile_id)
+      .filter((x): x is string => Boolean(x))
+  );
+
+  const { data: residentPool } = await supabase
     .from("profiles")
     .select("id, full_name, phone")
     .eq("business_profile_id", ctx.businessProfileId)
     .eq("role", "resident")
-    .is("unit_id", null)
-    .or(`building_id.is.null,building_id.eq.${params.id}`);
+    .order("full_name");
 
-  const eligibleProfiles = eligibleRaw ?? [];
+  const eligibleProfiles = (residentPool ?? []).filter(
+    (p) => !assignedResidentIds.has(p.id)
+  );
 
-  const profiles = linkedProfiles ?? [];
+  const { data: linkedData } =
+    residentIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, phone, role, is_active")
+          .in("id", residentIds)
+          .order("full_name")
+      : { data: [] as { id: string; full_name: string; phone: string | null; role: string; is_active: boolean | null }[] };
+
+  const profiles = linkedData ?? [];
 
   return (
     <div className="space-y-6">
@@ -145,7 +178,6 @@ export default async function BuildingDetailPage({
         buildingId={params.id}
         units={unitsWithResident}
         eligibleProfiles={eligibleProfiles}
-        suggestedFloorCount={building.floors_count}
       />
 
       <div>
@@ -155,9 +187,11 @@ export default async function BuildingDetailPage({
         {!profiles.length ? (
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
-              עדיין אין פרופילים עם{" "}
-              <code className="rounded bg-muted px-1 text-xs">building_id</code>{" "}
-              לבניין זה.
+              עדיין אין דיירים משויכים לדירות בבניין זה (
+              <code className="rounded bg-muted px-1 text-xs">
+                units.resident_profile_id
+              </code>
+              ).
             </CardContent>
           </Card>
         ) : (

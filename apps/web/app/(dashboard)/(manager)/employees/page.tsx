@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
+import { USER_ROLE_LABEL, type UserRole } from "@my-project/shared";
 
 export default async function EmployeesPage() {
   const ctx = await getManagerTenantContext();
@@ -18,7 +19,7 @@ export default async function EmployeesPage() {
     .from("profiles")
     .select("id, full_name, phone, role, is_active, created_at")
     .eq("business_profile_id", ctx.businessProfileId)
-    .eq("role", "employee")
+    .in("role", ["cleaner", "gardener", "employee"])
     .order("full_name");
 
   return (
@@ -27,7 +28,7 @@ export default async function EmployeesPage() {
         <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">עובדים</h1>
           <p className="text-sm text-muted-foreground">
-            פרופילים עם תפקיד עובד שטח בארגון.
+            מנקים, גננים ותפקידי שטח נוספים בארגון.
           </p>
         </div>
         {ctx.profile.role === "manager" ? <AddEmployeeDialog /> : null}
@@ -44,7 +45,7 @@ export default async function EmployeesPage() {
         <Card>
           <CardHeader>
             <CardTitle>אין עובדים</CardTitle>
-            <CardDescription>לא נמצאו משתמשים עם role = employee.</CardDescription>
+            <CardDescription>לא נמצאו עובדי שטח (מנקה / גנן).</CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -53,6 +54,7 @@ export default async function EmployeesPage() {
             <thead className="border-b bg-muted/50">
               <tr>
                 <th className="px-3 py-2 text-start font-medium">שם</th>
+                <th className="px-3 py-2 text-start font-medium">תפקיד</th>
                 <th className="px-3 py-2 text-start font-medium">טלפון</th>
                 <th className="px-3 py-2 text-start font-medium">פעיל</th>
                 <th className="px-3 py-2 text-start font-medium">נוצר</th>
@@ -62,6 +64,9 @@ export default async function EmployeesPage() {
               {rows.map((r) => (
                 <tr key={r.id} className="border-b last:border-0">
                   <td className="px-3 py-2 font-medium">{r.full_name}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {USER_ROLE_LABEL[r.role as UserRole] ?? r.role}
+                  </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {r.phone ?? "—"}
                   </td>
