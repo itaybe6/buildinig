@@ -1,5 +1,6 @@
 import { groupUnitNumbersByBuildingId } from "@/lib/building-unit-helpers";
 import { supabase } from "@/lib/supabase";
+import { formatILS } from "@my-project/shared";
 import { updateTenantBusinessViaWebApi } from "@/lib/update-tenant-business";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -21,6 +22,7 @@ type BuildingRow = {
   address: string;
   city: string;
   floors_count: number;
+  committee_fee: string;
 };
 
 type TenantDetail = {
@@ -69,6 +71,7 @@ export default function SuperAdminTenantDetailScreen() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [floors, setFloors] = useState("1");
+  const [committeeFee, setCommitteeFee] = useState("");
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -104,7 +107,7 @@ export default function SuperAdminTenantDetailScreen() {
 
     const { data: blist, error: be } = await supabase
       .from("buildings")
-      .select("id, address, city, floors_count")
+      .select("id, address, city, floors_count, committee_fee")
       .eq("business_profile_id", tid)
       .order("address");
 
@@ -130,12 +133,18 @@ export default function SuperAdminTenantDetailScreen() {
         : Promise.resolve({ count: 0, error: null }),
       supabase
         .from("service_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("business_profile_id", tid),
+        .select("id, buildings!inner(business_profile_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("buildings.business_profile_id", tid),
       supabase
         .from("service_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("business_profile_id", tid)
+        .select("id, buildings!inner(business_profile_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("buildings.business_profile_id", tid)
         .in("status", ["open", "assigned", "in_progress"]),
       buildingIds.length > 0
         ? supabase
@@ -233,11 +242,19 @@ export default function SuperAdminTenantDetailScreen() {
     const tid = Array.isArray(tenantId) ? tenantId[0] : tenantId;
     setSaving(true);
     const floorsCount = Math.max(1, Number.parseInt(floors, 10) || 1);
+    const feeRaw = committeeFee.trim().replace(",", ".");
+    const feeNum = Number.parseFloat(feeRaw);
+    if (committeeFee.trim() === "" || Number.isNaN(feeNum) || feeNum < 0) {
+      Alert.alert("שגיאה", "יש למלא דמי ועד בית (ש״ח, מספר חיובי או אפס).");
+      setSaving(false);
+      return;
+    }
     const { error } = await supabase.from("buildings").insert({
       business_profile_id: tid,
       address: address.trim(),
       city: city.trim(),
       floors_count: floorsCount,
+      committee_fee: String(feeNum),
     });
     setSaving(false);
     if (error) {
@@ -247,6 +264,7 @@ export default function SuperAdminTenantDetailScreen() {
     setAddress("");
     setCity("");
     setFloors("1");
+    setCommitteeFee("");
     setAddFormOpen(false);
     void load();
   }
@@ -377,9 +395,24 @@ export default function SuperAdminTenantDetailScreen() {
             value={floors}
             onChangeText={setFloors}
           />
+          <Text className="mb-1 text-sm text-gray-600">
+            דמי ועד בית (₪ לחודש לדירה)
+          </Text>
+          <TextInput
+            className="mb-3 rounded-lg border border-gray-300 px-3 py-2 text-left"
+            keyboardType="decimal-pad"
+            placeholder="למשל 350"
+            value={committeeFee}
+            onChangeText={setCommitteeFee}
+          />
           <Pressable
             className="rounded-lg bg-blue-600 py-3 disabled:opacity-50"
-            disabled={saving || !address.trim() || !city.trim()}
+            disabled={
+              saving ||
+              !address.trim() ||
+              !city.trim() ||
+              !committeeFee.trim()
+            }
             onPress={() => void onAdd()}
           >
             <Text className="text-center font-semibold text-white">
@@ -511,7 +544,8 @@ export default function SuperAdminTenantDetailScreen() {
               <Text className="font-semibold text-blue-700">{item.address}</Text>
               <Text className="text-sm text-gray-600">{item.city}</Text>
               <Text className="text-sm text-gray-500">
-                קומות: {item.floors_count}
+                ועד בית: {formatILS(item.committee_fee)} · קומות:{" "}
+                {item.floors_count}
                 {unitsByBuilding[item.id]?.length ? (
                   <>
                     {" "}

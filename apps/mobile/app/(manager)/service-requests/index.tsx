@@ -1,9 +1,11 @@
 import {
   REQUEST_CATEGORY_LABEL,
   REQUEST_STATUS_LABEL,
+  SERVICE_REQUEST_NEW_NOTIFICATION_TYPE,
 } from "@my-project/shared";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -27,6 +29,35 @@ export default function ManagerServiceRequestsListScreen() {
       buildings: unknown;
     }[]
   >([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user || !active) return;
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("auth_user_id", user.id)
+          .maybeSingle();
+        if (!profile || !active) return;
+
+        await supabase
+          .from("notifications")
+          .update({ is_read: true })
+          .eq("profile_id", profile.id)
+          .eq("type", SERVICE_REQUEST_NEW_NOTIFICATION_TYPE)
+          .eq("is_read", false);
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -55,8 +86,8 @@ export default function ManagerServiceRequestsListScreen() {
 
         const { data } = await supabase
           .from("service_requests")
-          .select("id, title, status, category, buildings ( address )")
-          .eq("business_profile_id", businessProfileId)
+          .select("id, title, status, category, buildings!inner ( address )")
+          .eq("buildings.business_profile_id", businessProfileId)
           .order("created_at", { ascending: false })
           .limit(120);
 

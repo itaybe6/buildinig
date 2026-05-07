@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
+import { formatILS } from "@my-project/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -44,7 +45,7 @@ export default async function BuildingDetailPage({
 
   const { data: units } = await supabase
     .from("units")
-    .select("id, unit_number, floor_number, monthly_fee, type, resident_profile_id")
+    .select("id, unit_number, floor_number, type, resident_profile_id")
     .eq("building_id", params.id)
     .order("unit_number");
 
@@ -139,7 +140,7 @@ export default async function BuildingDetailPage({
         </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">קומות (שדה)</CardTitle>
@@ -147,6 +148,17 @@ export default async function BuildingDetailPage({
           <CardContent>
             <p className="text-2xl font-semibold tabular-nums">
               {building.floors_count}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">דמי ועד בית</CardTitle>
+            <CardDescription className="text-xs">חודשי לדירה</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold tabular-nums">
+              {formatILS(building.committee_fee)}
             </p>
           </CardContent>
         </Card>

@@ -29,10 +29,10 @@ export default async function ResidentRequestDetailPage({
   const { data: row, error } = await supabase
     .from("service_requests")
     .select(
-      "title, description, category, status, priority, created_at, reported_by"
+      "title, description, category, status, priority, created_at, reported_by, image_urls, video_urls, buildings!inner(business_profile_id)"
     )
     .eq("id", id)
-    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .maybeSingle();
 
   if (error) {
@@ -46,7 +46,7 @@ export default async function ResidentRequestDetailPage({
     );
   }
 
-  if (!row || row.reported_by !== ctx.profile.profileId) {
+  if (!row) {
     notFound();
   }
 
@@ -92,10 +92,36 @@ export default async function ResidentRequestDetailPage({
               row.priority as keyof typeof REQUEST_PRIORITY_LABEL
             ] ?? row.priority}
           </p>
+          <p>
+            <span className="font-medium">מגיש: </span>
+            {row.reported_by === ctx.profile.profileId ? "את/ה" : "דייר אחר"}
+          </p>
           {row.description ? (
             <p className="whitespace-pre-wrap text-muted-foreground">
               {row.description}
             </p>
+          ) : null}
+          {(row.image_urls?.length ?? 0) > 0 ||
+          (row.video_urls?.length ?? 0) > 0 ? (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {(row.image_urls ?? []).map((url) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer">
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-36 w-36 rounded-md border object-cover"
+                  />
+                </a>
+              ))}
+              {(row.video_urls ?? []).map((url) => (
+                <video
+                  key={url}
+                  src={url}
+                  controls
+                  className="max-h-60 max-w-full rounded-md border"
+                />
+              ))}
+            </div>
           ) : null}
         </CardContent>
       </Card>

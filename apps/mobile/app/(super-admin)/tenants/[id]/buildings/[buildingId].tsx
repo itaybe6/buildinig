@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { formatILS } from "@my-project/shared";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -31,6 +32,7 @@ export default function SuperAdminBuildingDetailScreen() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [floors, setFloors] = useState<number>(0);
+  const [committeeFee, setCommitteeFee] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +42,7 @@ export default function SuperAdminBuildingDetailScreen() {
 
     const { data: b, error: be } = await supabase
       .from("buildings")
-      .select("business_profile_id, address, city, floors_count")
+      .select("business_profile_id, address, city, floors_count, committee_fee")
       .eq("id", bid)
       .maybeSingle();
 
@@ -103,6 +105,9 @@ export default function SuperAdminBuildingDetailScreen() {
     setAddress(b.address);
     setCity(b.city);
     setFloors(b.floors_count);
+    setCommitteeFee(
+      b.committee_fee != null ? String(b.committee_fee) : null
+    );
     setProfiles((plist ?? []) as ProfileRow[]);
   }, [tid, bid, router]);
 
@@ -131,7 +136,9 @@ export default function SuperAdminBuildingDetailScreen() {
 
         <Text className="mb-1 text-xl font-bold text-gray-900">{address}</Text>
         <Text className="mb-6 text-sm text-gray-600">
-          {city} · קומות {floors} · {profiles.length} דיירים בדירות
+          {city} · קומות {floors}
+          {committeeFee != null ? ` · ועד בית ${formatILS(committeeFee)}` : ""}{" "}
+          · {profiles.length} דיירים בדירות
         </Text>
 
         <Text className="mb-2 font-semibold text-gray-900">

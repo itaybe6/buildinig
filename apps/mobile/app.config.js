@@ -176,6 +176,13 @@ function buildConfig({ config }) {
     plugins: [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          sounds: [],
+          mode: "production",
+        },
+      ],
+      [
         "expo-image-picker",
         {
           photosPermission:
@@ -192,6 +199,13 @@ function buildConfig({ config }) {
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
       EXPO_PUBLIC_WEB_API_ORIGIN: process.env.EXPO_PUBLIC_WEB_API_ORIGIN ?? "",
+      eas: {
+        projectId:
+          process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+          process.env.EAS_PROJECT_ID ||
+          baseExtra?.eas?.projectId ||
+          "",
+      },
       theme,
     },
   };

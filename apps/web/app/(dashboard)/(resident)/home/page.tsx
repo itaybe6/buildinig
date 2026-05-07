@@ -21,15 +21,15 @@ export default async function ResidentHomePage() {
   const [pinnedRes, openReqsRes] = await Promise.all([
     supabase
       .from("announcements")
-      .select("id, title")
-      .eq("business_profile_id", businessProfileId)
+      .select("id, title, buildings!inner(business_profile_id)")
+      .eq("buildings.business_profile_id", businessProfileId)
       .eq("is_pinned", true)
       .order("created_at", { ascending: false })
       .limit(8),
     supabase
       .from("service_requests")
-      .select("id, title, status")
-      .eq("business_profile_id", businessProfileId)
+      .select("id, title, status, buildings!inner(business_profile_id)")
+      .eq("buildings.business_profile_id", businessProfileId)
       .eq("reported_by", profileId)
       .in("status", ["open", "assigned", "in_progress"])
       .order("created_at", { ascending: false })
@@ -79,7 +79,7 @@ export default async function ResidentHomePage() {
               href="/requests"
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
-              כל הקריאות שלי
+              מודעות וקריאות
             </Link>
           </CardDescription>
         </CardHeader>

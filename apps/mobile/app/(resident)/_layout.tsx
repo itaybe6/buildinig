@@ -12,7 +12,11 @@ export default function ResidentTabsLayout() {
       <Tabs.Screen name="home" options={{ title: "בית", tabBarLabel: "בית" }} />
       <Tabs.Screen
         name="requests"
-        options={{ title: "קריאות", tabBarLabel: "קריאות", headerShown: false }}
+        options={{
+          title: "מודעות וקריאות",
+          tabBarLabel: "מודעות וקריאות",
+          headerShown: false,
+        }}
       />
       <Tabs.Screen
         name="quotes"
@@ -21,10 +25,6 @@ export default function ResidentTabsLayout() {
       <Tabs.Screen
         name="payments"
         options={{ title: "תשלומים", tabBarLabel: "תשלומים" }}
-      />
-      <Tabs.Screen
-        name="announcements"
-        options={{ title: "מודעות", tabBarLabel: "מודעות" }}
       />
     </Tabs>
   );

@@ -16,10 +16,21 @@ function isSoftNavigationAuthRefresh(request: NextRequest): boolean {
 
 export async function middleware(request: NextRequest) {
   if (isSoftNavigationAuthRefresh(request)) {
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", request.nextUrl.pathname);
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   }
 
-  let response = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +44,11 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          response = NextResponse.next({ request });
+          const h = new Headers(request.headers);
+          h.set("x-pathname", request.nextUrl.pathname);
+          response = NextResponse.next({
+            request: { headers: h },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );

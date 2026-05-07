@@ -10,6 +10,7 @@ import {
 import { countUnitsByBuildingId } from "@/lib/building-unit-helpers";
 import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
+import { formatILS } from "@my-project/shared";
 
 export default function ManagerBuildingsListScreen() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function ManagerBuildingsListScreen() {
       address: string | null;
       city: string | null;
       floors_count: number | null;
+      committee_fee: string | null;
       is_active: boolean | null;
     }[]
   >([]);
@@ -55,7 +57,7 @@ export default function ManagerBuildingsListScreen() {
 
         const { data, error } = await supabase
           .from("buildings")
-          .select("id, address, city, floors_count, is_active")
+          .select("id, address, city, floors_count, committee_fee, is_active")
           .eq("business_profile_id", businessProfileId)
           .order("address");
 
@@ -132,6 +134,8 @@ export default function ManagerBuildingsListScreen() {
                 {r.city?.trim() || "—"}
               </Text>
               <Text className="mt-1 text-xs text-gray-400">
+                ועד בית:{" "}
+                {r.committee_fee != null ? formatILS(r.committee_fee) : "—"} ·
                 קומות: {r.floors_count ?? "—"} · דירות:{" "}
                 {unitCountByBuilding[r.id] ?? 0} ·{" "}
                 {r.is_active ? "פעיל" : "לא פעיל"}

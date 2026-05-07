@@ -36,10 +36,9 @@ export const SUPER_ADMIN_NAV: NavItem[] = [
 /** עמודי תושב — מקביל ל־(resident) במובייל (נתיבים נפרדים מממשק המנהל) */
 export const RESIDENT_NAV: NavItem[] = [
   { href: "/home", label: "בית" },
-  { href: "/requests", label: "קריאות" },
+  { href: "/requests", label: "מודעות וקריאות" },
   { href: "/quotes", label: "הצעות" },
   { href: "/resident-payments", label: "תשלומים" },
-  { href: "/resident-announcements", label: "מודעות" },
 ];
 
 /** עמודי עובד — מקביל ל־(employee) במובייל */

@@ -17,27 +17,14 @@ export default async function EmployeeAllRequestsPage() {
   if (!ctx.ok) return <NoTenantNotice reason={ctx.reason} />;
 
   const supabase = createClient();
-  const { data: rawRows, error } = await supabase
+  const { data: rows, error } = await supabase
     .from("service_requests")
-    .select("id, title, status, category, building_id")
-    .eq("business_profile_id", ctx.businessProfileId)
+    .select("id, title, status, category, buildings!inner(address)")
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .order("created_at", { ascending: false })
     .limit(120);
 
-  const rows = rawRows ?? [];
-  const buildingIds = Array.from(new Set(rows.map((r) => r.building_id)));
-
-  const { data: buildingRows } =
-    buildingIds.length > 0
-      ? await supabase
-          .from("buildings")
-          .select("id, address")
-          .in("id", buildingIds)
-      : { data: [] };
-
-  const addressByBuildingId = Object.fromEntries(
-    (buildingRows ?? []).map((b) => [b.id, b.address])
-  );
+  const list = rows ?? [];
 
   return (
     <div className="space-y-6">
@@ -55,7 +42,7 @@ export default async function EmployeeAllRequestsPage() {
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
-      ) : rows.length === 0 ? (
+      ) : list.length === 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>אין קריאות</CardTitle>
@@ -74,11 +61,15 @@ export default async function EmployeeAllRequestsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {list.map((row) => {
+                const building = row.buildings as unknown as {
+                  address: string;
+                } | null;
+                return (
                 <tr key={row.id} className="border-b last:border-0">
                   <td className="px-3 py-2 font-medium">{row.title}</td>
                   <td className="px-3 py-2">
-                    {addressByBuildingId[row.building_id] ?? "—"}
+                    {building?.address ?? "—"}
                   </td>
                   <td className="px-3 py-2">
                     {REQUEST_CATEGORY_LABEL[
@@ -91,7 +82,8 @@ export default async function EmployeeAllRequestsPage() {
                     ] ?? row.status}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

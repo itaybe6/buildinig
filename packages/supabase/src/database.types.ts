@@ -115,7 +115,7 @@ export type Database = {
           address: string;
           city: string;
           floors_count: number;
-          image_url: string | null;
+          committee_fee: string;
           manager_notes: string | null;
           is_active: boolean | null;
           created_at: string | null;
@@ -126,7 +126,7 @@ export type Database = {
           address: string;
           city: string;
           floors_count?: number;
-          image_url?: string | null;
+          committee_fee?: string;
           manager_notes?: string | null;
           is_active?: boolean | null;
           created_at?: string | null;
@@ -137,7 +137,7 @@ export type Database = {
           address?: string;
           city?: string;
           floors_count?: number;
-          image_url?: string | null;
+          committee_fee?: string;
           manager_notes?: string | null;
           is_active?: boolean | null;
           created_at?: string | null;
@@ -151,8 +151,6 @@ export type Database = {
           unit_number: string;
           floor_number: number | null;
           type: string | null;
-          size_sqm: number | null;
-          monthly_fee: string | null;
           resident_profile_id: string | null;
         };
         Insert: {
@@ -161,8 +159,6 @@ export type Database = {
           unit_number: string;
           floor_number?: number | null;
           type?: string | null;
-          size_sqm?: number | null;
-          monthly_fee?: string | null;
           resident_profile_id?: string | null;
         };
         Update: {
@@ -171,8 +167,6 @@ export type Database = {
           unit_number?: string;
           floor_number?: number | null;
           type?: string | null;
-          size_sqm?: number | null;
-          monthly_fee?: string | null;
           resident_profile_id?: string | null;
         };
         Relationships: [
@@ -188,7 +182,6 @@ export type Database = {
       service_requests: {
         Row: {
           id: string;
-          business_profile_id: string | null;
           building_id: string;
           unit_id: string | null;
           reported_by: string;
@@ -199,6 +192,7 @@ export type Database = {
           status: Database["public"]["Enums"]["request_status"];
           priority: Database["public"]["Enums"]["request_priority"];
           image_urls: string[] | null;
+          video_urls: string[] | null;
           internal_notes: string | null;
           resolved_at: string | null;
           created_at: string | null;
@@ -206,7 +200,6 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          business_profile_id?: string | null;
           building_id: string;
           unit_id?: string | null;
           reported_by: string;
@@ -217,6 +210,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["request_status"];
           priority?: Database["public"]["Enums"]["request_priority"];
           image_urls?: string[] | null;
+          video_urls?: string[] | null;
           internal_notes?: string | null;
           resolved_at?: string | null;
           created_at?: string | null;
@@ -224,7 +218,6 @@ export type Database = {
         };
         Update: {
           id?: string;
-          business_profile_id?: string | null;
           building_id?: string;
           unit_id?: string | null;
           reported_by?: string;
@@ -235,6 +228,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["request_status"];
           priority?: Database["public"]["Enums"]["request_priority"];
           image_urls?: string[] | null;
+          video_urls?: string[] | null;
           internal_notes?: string | null;
           resolved_at?: string | null;
           created_at?: string | null;
@@ -275,12 +269,12 @@ export type Database = {
       announcements: {
         Row: {
           id: string;
-          business_profile_id: string | null;
           building_id: string;
           created_by: string;
           title: string;
           body: string;
           image_urls: string[] | null;
+          video_urls: string[] | null;
           audience: Database["public"]["Enums"]["announcement_audience"] | null;
           is_pinned: boolean | null;
           expires_at: string | null;
@@ -288,12 +282,12 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          business_profile_id?: string | null;
           building_id: string;
           created_by: string;
           title: string;
           body: string;
           image_urls?: string[] | null;
+          video_urls?: string[] | null;
           audience?: Database["public"]["Enums"]["announcement_audience"] | null;
           is_pinned?: boolean | null;
           expires_at?: string | null;
@@ -301,12 +295,12 @@ export type Database = {
         };
         Update: {
           id?: string;
-          business_profile_id?: string | null;
           building_id?: string;
           created_by?: string;
           title?: string;
           body?: string;
           image_urls?: string[] | null;
+          video_urls?: string[] | null;
           audience?: Database["public"]["Enums"]["announcement_audience"] | null;
           is_pinned?: boolean | null;
           expires_at?: string | null;
@@ -407,6 +401,33 @@ export type Database = {
           ref_id?: string | null;
           ref_table?: string | null;
           created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      push_tokens: {
+        Row: {
+          id: string;
+          profile_id: string;
+          expo_push_token: string;
+          platform: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          expo_push_token: string;
+          platform: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          profile_id?: string;
+          expo_push_token?: string;
+          platform?: string;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

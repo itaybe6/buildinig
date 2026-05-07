@@ -29,7 +29,6 @@ export async function POST(
 
   let body: {
     full_name?: string;
-    email?: string;
     password?: string;
     phone?: string;
     unit_id?: string;
@@ -49,9 +48,8 @@ export async function POST(
     businessProfileId: scope.businessProfileId,
     buildingId,
     fullName: String(body.full_name ?? ""),
-    email: String(body.email ?? ""),
+    phoneRaw: String(body.phone ?? ""),
     password: String(body.password ?? ""),
-    phone: body.phone ? String(body.phone) : undefined,
     unitId: unitId || undefined,
   });
 

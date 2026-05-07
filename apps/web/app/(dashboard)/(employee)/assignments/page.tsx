@@ -20,8 +20,8 @@ export default async function EmployeeAssignmentsPage() {
   const supabase = createClient();
   const { data: rows, error } = await supabase
     .from("service_requests")
-    .select("id, title, status, category, created_at")
-    .eq("business_profile_id", ctx.businessProfileId)
+    .select("id, title, status, category, created_at, buildings!inner(business_profile_id)")
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .eq("assigned_to", ctx.profile.profileId)
     .order("created_at", { ascending: false })
     .limit(100);

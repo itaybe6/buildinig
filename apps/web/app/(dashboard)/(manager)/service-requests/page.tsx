@@ -29,12 +29,12 @@ export default async function ServiceRequestsBoardPage() {
       priority,
       category,
       created_at,
-      buildings ( address ),
+      buildings!inner ( address ),
       units ( unit_number ),
       reporter:profiles!service_requests_reported_by_fkey ( full_name )
     `
     )
-    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .order("created_at", { ascending: false });
 
   return (

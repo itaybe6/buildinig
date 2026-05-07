@@ -1,29 +1,45 @@
 import "server-only";
 
+import {
+  normalizeIsraelPhoneLocalDigits,
+  profilePhoneLookupVariants,
+} from "@my-project/shared";
 import { createAdminClient, hasServiceRoleKey } from "@/lib/supabase/admin";
+import bcrypt from "bcryptjs";
 
 export type InviteResidentResult =
   | { ok: true }
   | { ok: false; error: string };
 
-function duplicateEmailMessage(msg: string): string {
+function authCreateUserErrorMessage(msg: string): string {
   const m = msg.toLowerCase();
-  if (m.includes("already") || m.includes("registered") || m.includes("exists")) {
-    return "כתובת האימייל כבר רשומה במערכת.";
+  if (
+    m.includes("already") ||
+    m.includes("registered") ||
+    m.includes("exists") ||
+    m.includes("duplicate")
+  ) {
+    return "מספר הטלפון כבר רשום במערכת.";
   }
   return msg;
 }
 
+/** אימייל פנימי ל-Supabase Auth — הכניסה היא בטלפון + סיסמה (כמו /api/auth/login) */
+function syntheticAuthEmailForResidentPhone(localPhoneDigits: string): string {
+  const digits = localPhoneDigits.replace(/\D/g, "");
+  return `res.${digits}@residents.internal.invalid`;
+}
+
 /**
  * יוצר משתמש Auth + פרופיל דייר; אם נבחרה דירה — מקשר ב־`units.resident_profile_id`.
+ * כניסה: טלפון + סיסמה.
  */
 export async function inviteResidentToBuilding(params: {
   businessProfileId: string;
   buildingId: string;
   fullName: string;
-  email: string;
+  phoneRaw: string;
   password: string;
-  phone?: string;
   unitId?: string;
 }): Promise<InviteResidentResult> {
   if (!hasServiceRoleKey()) {
@@ -68,19 +84,45 @@ export async function inviteResidentToBuilding(params: {
       .eq("id", resolvedUnitId);
   }
 
-  const email = params.email.trim().toLowerCase();
-  if (!email) {
-    return { ok: false, error: "חובה אימייל." };
-  }
-  if (!params.password || params.password.length < 6) {
-    return { ok: false, error: "סיסמה — לפחות 6 תווים." };
-  }
   if (!params.fullName.trim()) {
     return { ok: false, error: "חובה שם מלא." };
   }
 
+  const phoneLocal = normalizeIsraelPhoneLocalDigits(params.phoneRaw);
+  if (!phoneLocal) {
+    return {
+      ok: false,
+      error: "מספר טלפון נייד ישראלי לא תקין (למשל 050-1234567).",
+    };
+  }
+
+  if (!params.password || params.password.length < 6) {
+    return { ok: false, error: "סיסמה — לפחות 6 תווים." };
+  }
+
+  const phoneVariants = profilePhoneLookupVariants(params.phoneRaw);
+  if (phoneVariants.length === 0) {
+    return { ok: false, error: "מספר טלפון לא תקין." };
+  }
+
+  const { data: existing, error: existingErr } = await admin
+    .from("profiles")
+    .select("id")
+    .in("phone", phoneVariants)
+    .limit(1);
+
+  if (existingErr) {
+    return { ok: false, error: existingErr.message };
+  }
+  if (existing?.length) {
+    return { ok: false, error: "מספר הטלפון כבר רשום במערכת." };
+  }
+
+  const authEmail = syntheticAuthEmailForResidentPhone(phoneLocal);
+  const passwordHash = await bcrypt.hash(params.password, 10);
+
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email,
+    email: authEmail,
     password: params.password,
     email_confirm: true,
   });
@@ -89,7 +131,7 @@ export async function inviteResidentToBuilding(params: {
     return {
       ok: false,
       error: authErr
-        ? duplicateEmailMessage(authErr.message)
+        ? authCreateUserErrorMessage(authErr.message)
         : "שגיאה ביצירת משתמש.",
     };
   }
@@ -100,7 +142,8 @@ export async function inviteResidentToBuilding(params: {
       auth_user_id: authData.user.id,
       business_profile_id: params.businessProfileId,
       full_name: params.fullName.trim(),
-      phone: params.phone?.trim() || null,
+      phone: phoneLocal,
+      password_hash: passwordHash,
       role: "resident",
       is_active: true,
     })

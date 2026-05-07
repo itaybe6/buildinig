@@ -26,10 +26,10 @@ export default async function AnnouncementsPage() {
       is_pinned,
       expires_at,
       created_at,
-      buildings ( address, city )
+      buildings!inner ( address, city )
     `
     )
-    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 

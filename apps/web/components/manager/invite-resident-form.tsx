@@ -113,13 +113,15 @@ export function InviteResidentForm({
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor={pid("email")}>אימייל (כניסה)</Label>
+        <Label htmlFor={pid("phone")}>טלפון נייד (כניסה למערכת)</Label>
         <Input
-          id={pid("email")}
-          name="email"
-          type="email"
+          id={pid("phone")}
+          name="phone"
+          type="tel"
           required
-          autoComplete="email"
+          autoComplete="tel"
+          dir="ltr"
+          placeholder="למשל 050-1234567"
         />
       </div>
       <div className="grid gap-2">
@@ -132,10 +134,6 @@ export function InviteResidentForm({
           minLength={6}
           autoComplete="new-password"
         />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor={pid("phone")}>טלפון (אופציונלי)</Label>
-        <Input id={pid("phone")} name="phone" type="tel" autoComplete="tel" />
       </div>
       {state && !state.ok ? (
         <p className="text-sm text-destructive">{state.error}</p>

@@ -52,9 +52,9 @@ export default function ManagerAnnouncementsScreen() {
         const { data, error } = await supabase
           .from("announcements")
           .select(
-            "id, title, body, audience, is_pinned, created_at, buildings ( address, city )"
+            "id, title, body, audience, is_pinned, created_at, buildings!inner ( address, city )"
           )
-          .eq("business_profile_id", businessProfileId)
+          .eq("buildings.business_profile_id", businessProfileId)
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false });
 

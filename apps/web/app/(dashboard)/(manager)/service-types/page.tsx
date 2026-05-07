@@ -1,3 +1,4 @@
+import { AddServiceTypeForm } from "@/components/manager/add-service-type-form";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -26,8 +27,12 @@ export default async function ServiceTypesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">סוגי שירות</h1>
-        <p className="text-sm text-muted-foreground">טבלת service_types.</p>
+        <p className="text-sm text-muted-foreground">
+          הגדרת סוגי שירות לארגון — מופיעים בהצעות מחיר ובחירות דיירים לפי ההגדרות.
+        </p>
       </div>
+
+      <AddServiceTypeForm />
 
       {error ? (
         <Card>

@@ -11,12 +11,13 @@ import {
 } from "@my-project/ui-web";
 import { groupUnitNumbersByBuildingId } from "@/lib/building-unit-helpers";
 import type { Database } from "@my-project/supabase";
+import { formatILS } from "@my-project/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 type BuildingRow = Pick<
   Database["public"]["Tables"]["buildings"]["Row"],
-  "id" | "address" | "city" | "floors_count" | "is_active"
+  "id" | "address" | "city" | "floors_count" | "committee_fee" | "is_active"
 >;
 
 type PageProps = {
@@ -83,7 +84,7 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
       .order("full_name"),
     supabase
       .from("buildings")
-      .select("id, address, city, floors_count, is_active, created_at")
+      .select("id, address, city, floors_count, committee_fee, is_active, created_at")
       .eq("business_profile_id", params.id)
       .order("address"),
     supabase
@@ -92,12 +93,18 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
       .eq("business_profile_id", params.id),
     supabase
       .from("service_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", params.id),
+      .select("id, buildings!inner(business_profile_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("buildings.business_profile_id", params.id),
     supabase
       .from("service_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("business_profile_id", params.id)
+      .select("id, buildings!inner(business_profile_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("buildings.business_profile_id", params.id)
       .in("status", ["open", "assigned", "in_progress"]),
   ]);
 
@@ -307,6 +314,7 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
                   <th className="px-3 py-2 text-start font-medium">כתובת</th>
                   <th className="px-3 py-2 text-start font-medium">עיר</th>
                   <th className="px-3 py-2 text-start font-medium">קומות</th>
+                  <th className="px-3 py-2 text-start font-medium">ועד בית</th>
                   <th className="px-3 py-2 text-start font-medium">דירות</th>
                   <th className="px-3 py-2 text-start font-medium">סטטוס</th>
                 </tr>
@@ -327,6 +335,9 @@ export default async function SuperAdminTenantDetailPage(props: PageProps) {
                       </td>
                       <td className="px-3 py-2">{b.city}</td>
                       <td className="px-3 py-2 tabular-nums">{b.floors_count}</td>
+                      <td className="px-3 py-2 tabular-nums whitespace-nowrap">
+                        {formatILS(b.committee_fee)}
+                      </td>
                       <td className="max-w-[min(100vw-2rem,320px)] px-3 py-2 align-top">
                         {unitNums.length === 0 ? (
                           <span className="text-muted-foreground">—</span>

@@ -7,6 +7,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
+  Linking,
   Pressable,
   ScrollView,
   Text,
@@ -27,7 +29,11 @@ export default function ResidentRequestDetailScreen() {
     status: keyof typeof REQUEST_STATUS_LABEL;
     priority: keyof typeof REQUEST_PRIORITY_LABEL;
     created_at: string | null;
+    reported_by: string;
+    image_urls: string[] | null;
+    video_urls: string[] | null;
   } | null>(null);
+  const [myProfileId, setMyProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,22 +74,25 @@ export default function ResidentRequestDetailScreen() {
         const { data, error } = await supabase
           .from("service_requests")
           .select(
-            "title, description, category, status, priority, created_at, reported_by"
+            "title, description, category, status, priority, created_at, reported_by, image_urls, video_urls, buildings!inner(business_profile_id)"
           )
           .eq("id", String(id))
-          .eq("business_profile_id", businessProfileId)
+          .eq("buildings.business_profile_id", businessProfileId)
           .maybeSingle();
 
         if (error) {
           setErr(error.message);
           return;
         }
-        if (!data || data.reported_by !== profile.id) {
-          setErr("אין הרשאה לצפות בקריאה זו");
+        if (!data) {
+          setErr("הקריאה לא נמצאה");
           return;
         }
 
-        if (!cancelled) setRow(data);
+        if (!cancelled) {
+          setMyProfileId(profile.id);
+          setRow(data);
+        }
       } catch (e) {
         if (!cancelled) setErr(e instanceof Error ? e.message : "שגיאה");
       } finally {
@@ -130,11 +139,45 @@ export default function ResidentRequestDetailScreen() {
           נוצר: {new Date(row.created_at).toLocaleString("he-IL")}
         </Text>
       ) : null}
+      <Text className="mb-3 text-sm text-gray-600">
+        מגיש:{" "}
+        {myProfileId && row.reported_by === myProfileId ? "את/ה" : "דייר אחר"}
+      </Text>
       {row.description ? (
         <Text className="text-base leading-7">{row.description}</Text>
       ) : (
         <Text className="text-gray-500">אין תיאור נוסף.</Text>
       )}
+      {(row.image_urls?.length ?? 0) > 0 ? (
+        <View className="mt-4 flex-row flex-wrap gap-2">
+          {(row.image_urls ?? []).map((url) => (
+            <Image
+              key={url}
+              source={{ uri: url }}
+              className="h-28 w-28 rounded-lg"
+              resizeMode="cover"
+            />
+          ))}
+        </View>
+      ) : null}
+      {(row.video_urls?.length ?? 0) > 0 ? (
+        <View className="mt-4 gap-2">
+          {(row.video_urls ?? []).map((url) => (
+            <Pressable
+              key={url}
+              onPress={() => Linking.openURL(url)}
+              className="rounded-lg border border-slate-200 px-3 py-2 active:bg-slate-50"
+            >
+              <Text className="text-sm font-medium text-slate-900">
+                צפייה בסרטון
+              </Text>
+              <Text className="mt-1 text-xs text-slate-500" numberOfLines={1}>
+                {url}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

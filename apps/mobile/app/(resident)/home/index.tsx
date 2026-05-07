@@ -1,6 +1,7 @@
 import {
   REQUEST_STATUS_LABEL,
 } from "@my-project/shared";
+import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -57,8 +58,8 @@ export default function ResidentHomeScreen() {
 
         const { data: ann } = await supabase
           .from("announcements")
-          .select("id, title")
-          .eq("business_profile_id", businessProfileId)
+          .select("id, title, buildings!inner(business_profile_id)")
+          .eq("buildings.business_profile_id", businessProfileId)
           .eq("is_pinned", true)
           .order("created_at", { ascending: false })
           .limit(8);
@@ -66,8 +67,8 @@ export default function ResidentHomeScreen() {
 
         const { data: reqs } = await supabase
           .from("service_requests")
-          .select("id, title, status")
-          .eq("business_profile_id", businessProfileId)
+          .select("id, title, status, buildings!inner(business_profile_id)")
+          .eq("buildings.business_profile_id", businessProfileId)
           .eq("reported_by", profile.id)
           .in("status", ["open", "assigned", "in_progress"])
           .order("created_at", { ascending: false })
@@ -122,7 +123,12 @@ export default function ResidentHomeScreen() {
         </View>
       )}
 
-      <Text className="mb-2 font-semibold text-slate-800">קריאות פתוחות</Text>
+      <View className="mb-2 flex-row flex-wrap items-center justify-between gap-2">
+        <Text className="font-semibold text-slate-800">קריאות פתוחות</Text>
+        <Link href="/(resident)/requests" className="text-sm font-medium text-blue-600">
+          מודעות וקריאות
+        </Link>
+      </View>
       {openReqs.length === 0 ? (
         <Text className="text-gray-500">אין קריאות פתוחות.</Text>
       ) : (

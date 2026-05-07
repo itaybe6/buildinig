@@ -6,6 +6,7 @@ import {
   profilePhoneLookupVariants,
 } from "@my-project/shared";
 import { createAdminClient, hasServiceRoleKey } from "@/lib/supabase/admin";
+import bcrypt from "bcryptjs";
 
 export type CreateEmployeeResult =
   | { ok: true }
@@ -87,6 +88,8 @@ export async function createEmployeeForBusiness(params: {
 
   const authEmail = syntheticAuthEmailForEmployeePhone(phoneLocal);
 
+  const passwordHash = await bcrypt.hash(params.password, 10);
+
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
     email: authEmail,
     password: params.password,
@@ -107,6 +110,7 @@ export async function createEmployeeForBusiness(params: {
     business_profile_id: params.businessProfileId,
     full_name: params.fullName.trim(),
     phone: phoneLocal,
+    password_hash: passwordHash,
     role: params.fieldRole,
     is_active: true,
   });

@@ -30,14 +30,14 @@ export default async function ServiceRequestDetailPage({
     .select(
       `
       *,
-      buildings ( address, city ),
+      buildings!inner ( address, city ),
       units ( unit_number ),
       reporter:profiles!service_requests_reported_by_fkey ( full_name, phone ),
       assignee:profiles!service_requests_assigned_to_fkey ( full_name, phone )
     `
     )
     .eq("id", params.id)
-    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .maybeSingle();
 
   if (error) {

@@ -66,8 +66,8 @@ export default function EmployeeAssignmentsScreen() {
 
         const { data } = await supabase
           .from("service_requests")
-          .select("id, title, status, category, created_at")
-          .eq("business_profile_id", businessProfileId)
+          .select("id, title, status, category, created_at, buildings!inner(business_profile_id)")
+          .eq("buildings.business_profile_id", businessProfileId)
           .eq("assigned_to", profile.id)
           .order("created_at", { ascending: false })
           .limit(100);

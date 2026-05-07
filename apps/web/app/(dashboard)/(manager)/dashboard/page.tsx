@@ -34,8 +34,11 @@ export default async function ManagerDashboardPage() {
         .eq("business_profile_id", businessProfileId),
       supabase
         .from("service_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("business_profile_id", businessProfileId)
+        .select("id, buildings!inner(business_profile_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("buildings.business_profile_id", businessProfileId)
         .in("status", ["open", "assigned", "in_progress"]),
       supabase
         .from("payments")

@@ -11,30 +11,49 @@ import { getSidebarSections, type NavItem } from "@/lib/nav";
 function NavLinks({
   items,
   pathname,
+  navBadges,
   onNavigate,
 }: {
   items: NavItem[];
   pathname: string | null;
+  navBadges?: Record<string, number>;
   onNavigate?: () => void;
 }) {
   return (
     <ul className="flex flex-col gap-1">
-      {items.map((item) => (
-        <li key={item.href}>
-          <Link
-            href={item.href}
-            onClick={onNavigate}
-            className={cn(
-              "block rounded-md px-3 py-3 text-base transition-colors hover:bg-accent",
-              pathname === item.href || pathname?.startsWith(item.href + "/")
-                ? "bg-accent font-medium text-accent-foreground"
-                : "text-muted-foreground"
-            )}
-          >
-            {item.label}
-          </Link>
-        </li>
-      ))}
+      {items.map((item) => {
+        const badge = navBadges?.[item.href];
+        return (
+          <li key={item.href}>
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center justify-between gap-2 rounded-md px-3 py-3 text-base transition-colors hover:bg-accent",
+                pathname === item.href || pathname?.startsWith(item.href + "/")
+                  ? "bg-accent font-medium text-accent-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <span>{item.label}</span>
+              {badge != null && badge > 0 ? (
+                <span
+                  className={cn(
+                    "flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums",
+                    pathname === item.href ||
+                      pathname?.startsWith(item.href + "/")
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-destructive text-destructive-foreground"
+                  )}
+                  aria-label={`התראות: ${badge}`}
+                >
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -43,10 +62,12 @@ export function MobileDashboardNav({
   role,
   displayName,
   managerBrand,
+  navBadges,
 }: {
   role: UserRole;
   displayName: string;
   managerBrand?: { name: string; logoUrl: string | null };
+  navBadges?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -127,6 +148,7 @@ export function MobileDashboardNav({
                     <NavLinks
                       items={group.items}
                       pathname={pathname}
+                      navBadges={navBadges}
                       onNavigate={() => setOpen(false)}
                     />
                   </div>
@@ -139,6 +161,7 @@ export function MobileDashboardNav({
                     <NavLinks
                       items={sections.admin}
                       pathname={pathname}
+                      navBadges={navBadges}
                       onNavigate={() => setOpen(false)}
                     />
                   </div>

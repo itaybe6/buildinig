@@ -13,27 +13,46 @@ import { getSidebarSections, type NavItem } from "@/lib/nav";
 function NavList({
   items,
   pathname,
+  navBadges,
 }: {
   items: NavItem[];
   pathname: string | null;
+  navBadges?: Record<string, number>;
 }) {
   return (
     <ul className="flex flex-col gap-1">
-      {items.map((item) => (
-        <li key={item.href}>
-          <Link
-            href={item.href}
-            className={cn(
-              "block rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
-              pathname === item.href || pathname?.startsWith(item.href + "/")
-                ? "bg-accent font-medium text-accent-foreground"
-                : "text-muted-foreground"
-            )}
-          >
-            {item.label}
-          </Link>
-        </li>
-      ))}
+      {items.map((item) => {
+        const badge = navBadges?.[item.href];
+        return (
+          <li key={item.href}>
+            <Link
+              href={item.href}
+              className={cn(
+                "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
+                pathname === item.href || pathname?.startsWith(item.href + "/")
+                  ? "bg-accent font-medium text-accent-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <span>{item.label}</span>
+              {badge != null && badge > 0 ? (
+                <span
+                  className={cn(
+                    "flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums",
+                    pathname === item.href ||
+                      pathname?.startsWith(item.href + "/")
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-destructive text-destructive-foreground"
+                  )}
+                  aria-label={`התראות: ${badge}`}
+                >
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -43,6 +62,7 @@ export function DashboardShell({
   displayName,
   contentDir,
   managerBrand,
+  navBadges,
   children,
 }: {
   role: UserRole;
@@ -51,6 +71,8 @@ export function DashboardShell({
   contentDir: "rtl" | "ltr";
   /** מנהל בלבד — שם ולוגו העסק לסרגל */
   managerBrand?: { name: string; logoUrl: string | null };
+  /** מפתח = href מ-nav (למשל מונה קריאות חדשות ליד `/service-requests`) */
+  navBadges?: Record<string, number>;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -100,7 +122,11 @@ export function DashboardShell({
                   {group.title}
                 </p>
               ) : null}
-              <NavList items={group.items} pathname={pathname} />
+              <NavList
+                items={group.items}
+                pathname={pathname}
+                navBadges={navBadges}
+              />
             </div>
           ))}
           {sections.admin && sections.admin.length > 0 ? (
@@ -108,7 +134,11 @@ export function DashboardShell({
               <p className="mb-2 px-2 text-xs font-semibold uppercase text-muted-foreground">
                 מנהל-על
               </p>
-              <NavList items={sections.admin} pathname={pathname} />
+              <NavList
+                items={sections.admin}
+                pathname={pathname}
+                navBadges={navBadges}
+              />
             </div>
           ) : null}
         </nav>
@@ -121,6 +151,7 @@ export function DashboardShell({
           role={role}
           displayName={displayName}
           managerBrand={managerBrand}
+          navBadges={navBadges}
         />
         <SuperAdminRouteGuard role={role}>
           <div className="flex-1 p-4 md:p-6">{children}</div>

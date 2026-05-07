@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@my-project/ui-web";
 import type { Database } from "@my-project/supabase";
+import { formatILS } from "@my-project/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -30,7 +31,7 @@ type PageProps = {
 
 type UnitRow = Pick<
   Database["public"]["Tables"]["units"]["Row"],
-  "id" | "unit_number" | "floor_number" | "type" | "monthly_fee" | "size_sqm"
+  "id" | "unit_number" | "floor_number" | "type"
 >;
 
 function compareUnitNumber(a: string, b: string) {
@@ -74,7 +75,7 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
   const { data: building, error: be } = await supabase
     .from("buildings")
     .select(
-      "id, business_profile_id, address, city, floors_count, is_active, created_at"
+      "id, business_profile_id, address, city, floors_count, committee_fee, is_active, created_at"
     )
     .eq("id", params.buildingId)
     .maybeSingle();
@@ -106,7 +107,7 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
   const { data: unitsRaw, error: ue } = await supabase
     .from("units")
     .select(
-      "id, unit_number, floor_number, type, monthly_fee, size_sqm, resident_profile_id"
+      "id, unit_number, floor_number, type, resident_profile_id"
     )
     .eq("building_id", params.buildingId);
 
@@ -203,6 +204,10 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
             {building.city}
           </p>
           <p>
+            <span className="text-muted-foreground">דמי ועד בית (חודשי לדירה): </span>
+            {formatILS(building.committee_fee)}
+          </p>
+          <p>
             <span className="text-muted-foreground">נוצר: </span>
             {building.created_at
               ? new Date(building.created_at).toLocaleString("he-IL")
@@ -268,18 +273,6 @@ export default async function SuperAdminBuildingProfilesPage(props: PageProps) {
                                     <span className="text-muted-foreground">
                                       {" "}
                                       · {u.type}
-                                    </span>
-                                  ) : null}
-                                  {u.size_sqm != null ? (
-                                    <span className="text-muted-foreground">
-                                      {" "}
-                                      · {u.size_sqm} מ״ר
-                                    </span>
-                                  ) : null}
-                                  {u.monthly_fee != null ? (
-                                    <span className="text-muted-foreground">
-                                      {" "}
-                                      · ועד {u.monthly_fee}
                                     </span>
                                   ) : null}
                                   <ProfileLines

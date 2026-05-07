@@ -28,9 +28,8 @@ export async function inviteResidentForBuildingAction(
     businessProfileId: ctx.businessProfileId,
     buildingId,
     fullName: String(formData.get("full_name") ?? ""),
-    email: String(formData.get("email") ?? ""),
+    phoneRaw: String(formData.get("phone") ?? ""),
     password: String(formData.get("password") ?? ""),
-    phone: String(formData.get("phone") ?? ""),
     unitId: unitIdRaw || undefined,
   });
 
@@ -40,5 +39,6 @@ export async function inviteResidentForBuildingAction(
 
   revalidatePath(`/buildings/${buildingId}`);
   revalidatePath("/dashboard");
+  revalidatePath("/residents");
   return { ok: true };
 }

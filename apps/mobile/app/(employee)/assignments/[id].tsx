@@ -69,10 +69,10 @@ export default function EmployeeAssignmentDetailScreen() {
         const { data, error } = await supabase
           .from("service_requests")
           .select(
-            "title, description, category, status, priority, internal_notes, created_at, assigned_to"
+            "title, description, category, status, priority, internal_notes, created_at, assigned_to, buildings!inner(business_profile_id)"
           )
           .eq("id", String(id))
-          .eq("business_profile_id", businessProfileId)
+          .eq("buildings.business_profile_id", businessProfileId)
           .maybeSingle();
 
         if (error) {

@@ -7,6 +7,7 @@ import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
 import {
   analyzeBulkUnitNumberIssues,
+  formatILS,
   validateAndGenerateBulkUnits,
 } from "@my-project/shared";
 import { useLocalSearchParams } from "expo-router";
@@ -34,7 +35,6 @@ type UnitRow = {
   id: string;
   unit_number: string;
   floor_number: number | null;
-  monthly_fee: string | null;
   type: string | null;
   resident: {
     id: string;
@@ -57,6 +57,7 @@ export default function ManagerBuildingDetailScreen() {
   const [err, setErr] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [committeeFee, setCommitteeFee] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [units, setUnits] = useState<UnitRow[]>([]);
   const [eligibleProfiles, setEligibleProfiles] = useState<EligibleProfile[]>(
@@ -80,7 +81,6 @@ export default function ManagerBuildingDetailScreen() {
   const [inviteForUnitId, setInviteForUnitId] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -113,14 +113,14 @@ export default function ManagerBuildingDetailScreen() {
 
     const { data: building, error: bErr } = await supabase
       .from("buildings")
-      .select("address, city, floors_count")
+      .select("address, city, floors_count, committee_fee")
       .eq("id", bid)
       .eq("business_profile_id", businessProfileId)
       .maybeSingle();
 
     const { data: unitsRaw, error: uErr } = await supabase
       .from("units")
-      .select("id, unit_number, floor_number, monthly_fee, type, resident_profile_id")
+      .select("id, unit_number, floor_number, type, resident_profile_id")
       .eq("building_id", bid)
       .order("unit_number");
 
@@ -211,7 +211,6 @@ export default function ManagerBuildingDetailScreen() {
         id: u.id,
         unit_number: u.unit_number,
         floor_number: u.floor_number,
-        monthly_fee: u.monthly_fee,
         type: u.type,
         resident: rp
           ? { id: rp.id, full_name: rp.full_name, phone: rp.phone }
@@ -221,6 +220,9 @@ export default function ManagerBuildingDetailScreen() {
 
     setAddress(building.address ?? "");
     setCity(building.city ?? "");
+    setCommitteeFee(
+      building.committee_fee != null ? String(building.committee_fee) : null
+    );
     setProfiles((linkedProfs ?? []) as ProfileRow[]);
     setUnits(merged);
     setEligibleProfiles(eligibleRaw as EligibleProfile[]);
@@ -380,9 +382,8 @@ export default function ManagerBuildingDetailScreen() {
     setSaving(true);
     const result = await inviteResidentToBuildingViaWebApi(bid, {
       full_name: fullName.trim(),
-      email: email.trim(),
+      phone: phone.trim(),
       password,
-      phone: phone.trim() || undefined,
       unit_id: inviteForUnitId ?? undefined,
     });
     setSaving(false);
@@ -391,7 +392,6 @@ export default function ManagerBuildingDetailScreen() {
       return;
     }
     setFullName("");
-    setEmail("");
     setPassword("");
     setPhone("");
     setInviteForUnitId(null);
@@ -421,7 +421,11 @@ export default function ManagerBuildingDetailScreen() {
         <Text className="mb-1 text-xl font-bold">
           {address.trim() || "—"}
         </Text>
-        <Text className="mb-6 text-sm text-gray-600">{city.trim() || "—"}</Text>
+        <Text className="mb-1 text-sm text-gray-600">{city.trim() || "—"}</Text>
+        <Text className="mb-6 text-sm text-gray-600">
+          דמי ועד בית (חודשי):{" "}
+          {committeeFee != null ? formatILS(committeeFee) : "—"}
+        </Text>
 
         <Text className="mb-2 font-semibold text-slate-800">הוספת דירות</Text>
         <View className="mb-3 flex-row gap-2">
@@ -630,11 +634,6 @@ export default function ManagerBuildingDetailScreen() {
                     קומה {u.floor_number}
                   </Text>
                 ) : null}
-                {u.monthly_fee != null ? (
-                  <Text className="text-sm text-gray-600">
-                    דמי ניהול: {u.monthly_fee}
-                  </Text>
-                ) : null}
                 {u.resident ? (
                   <Text className="mt-1 text-sm text-slate-700">
                     דייר: {u.resident.full_name}
@@ -703,32 +702,24 @@ export default function ManagerBuildingDetailScreen() {
         />
         <TextInput
           className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
-          placeholder="אימייל"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
+          placeholder="טלפון נייד (כניסה)"
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
         />
         <TextInput
-          className="mb-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
+          className="mb-4 rounded-lg border border-gray-300 px-3 py-2 text-left"
           placeholder="סיסמה ראשונית"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-        />
-        <TextInput
-          className="mb-4 rounded-lg border border-gray-300 px-3 py-2 text-left"
-          placeholder="טלפון (אופציונלי)"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
         />
         <Pressable
           className="mb-8 rounded-lg bg-blue-600 py-3 disabled:opacity-50"
           disabled={
             saving ||
             !fullName.trim() ||
-            !email.trim() ||
+            !phone.trim() ||
             password.length < 6
           }
           onPress={() => void onInvite()}

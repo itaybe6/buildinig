@@ -29,10 +29,10 @@ export default async function EmployeeAssignmentDetailPage({
   const { data: row, error } = await supabase
     .from("service_requests")
     .select(
-      "title, description, category, status, priority, internal_notes, created_at, assigned_to"
+      "title, description, category, status, priority, internal_notes, created_at, assigned_to, buildings!inner(business_profile_id)"
     )
     .eq("id", id)
-    .eq("business_profile_id", ctx.businessProfileId)
+    .eq("buildings.business_profile_id", ctx.businessProfileId)
     .maybeSingle();
 
   if (error) {

@@ -1,3 +1,4 @@
+import { AddResidentDialog } from "@/components/manager/add-resident-dialog";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -91,17 +92,30 @@ export default async function ManagerResidentsPage() {
 
   const buildingById = new Map(buildings.map((b) => [b.id, b] as const));
 
+  const unitOptions = units.map((u) => ({
+    id: u.id,
+    unit_number: u.unit_number,
+    floor_number: u.floor_number,
+    building_id: u.building_id,
+    resident_profile_id: u.resident_profile_id,
+  }));
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">דיירים</h1>
-        <p className="text-sm text-muted-foreground">
-          כל הדיירים בארגון, מחולקים לפי בניין (שיוך דרך דירה ב־
-          <code className="rounded bg-muted px-1 text-xs">
-            units.resident_profile_id
-          </code>
-          ).
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">דיירים</h1>
+          <p className="text-sm text-muted-foreground">
+            כל הדיירים בארגון, מחולקים לפי בניין (שיוך דרך דירה ב־
+            <code className="rounded bg-muted px-1 text-xs">
+              units.resident_profile_id
+            </code>
+            ).
+          </p>
+        </div>
+        {ctx.profile.role === "manager" ? (
+          <AddResidentDialog buildings={buildings} units={unitOptions} />
+        ) : null}
       </div>
 
       {error ? (

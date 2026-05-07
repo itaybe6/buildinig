@@ -1,4 +1,5 @@
 import { AddEmployeeDialog } from "@/components/manager/add-employee-dialog";
+import { EmployeesTable } from "@/components/manager/employees-table";
 import { NoTenantNotice } from "@/components/no-tenant-notice";
 import { getManagerTenantContext } from "@/lib/dashboard/session";
 import { createClient } from "@/lib/supabase/server";
@@ -8,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
-import { USER_ROLE_LABEL, type UserRole } from "@my-project/shared";
 
 export default async function EmployeesPage() {
   const ctx = await getManagerTenantContext();
@@ -49,38 +49,10 @@ export default async function EmployeesPage() {
           </CardHeader>
         </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead className="border-b bg-muted/50">
-              <tr>
-                <th className="px-3 py-2 text-start font-medium">שם</th>
-                <th className="px-3 py-2 text-start font-medium">תפקיד</th>
-                <th className="px-3 py-2 text-start font-medium">טלפון</th>
-                <th className="px-3 py-2 text-start font-medium">פעיל</th>
-                <th className="px-3 py-2 text-start font-medium">נוצר</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium">{r.full_name}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {USER_ROLE_LABEL[r.role as UserRole] ?? r.role}
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {r.phone ?? "—"}
-                  </td>
-                  <td className="px-3 py-2">{r.is_active ? "כן" : "לא"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {r.created_at
-                      ? new Date(r.created_at).toLocaleDateString("he-IL")
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <EmployeesTable
+          rows={rows}
+          canManage={ctx.profile.role === "manager"}
+        />
       )}
     </div>
   );

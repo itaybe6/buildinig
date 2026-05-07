@@ -5,9 +5,8 @@ export async function inviteResidentToBuildingViaWebApi(
   buildingId: string,
   input: {
     full_name: string;
-    email: string;
+    phone: string;
     password: string;
-    phone?: string;
     /** קישור לדירה ספציפית בעת יצירת דייר */
     unit_id?: string;
   }
@@ -38,9 +37,8 @@ export async function inviteResidentToBuildingViaWebApi(
       },
       body: JSON.stringify({
         full_name: input.full_name,
-        email: input.email,
+        phone: input.phone,
         password: input.password,
-        phone: input.phone ?? "",
         ...(input.unit_id ? { unit_id: input.unit_id } : {}),
       }),
     }

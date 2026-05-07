@@ -11,7 +11,6 @@ export type UnitWithResidentRow = {
   id: string;
   unit_number: string;
   floor_number: number | null;
-  monthly_fee: string | null;
   type: string | null;
   resident: { id: string; full_name: string; phone: string | null } | null;
 };
@@ -155,7 +154,7 @@ export function ManagerBuildingUnitsPanel({
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[560px] text-sm">
               <thead className="border-b bg-muted/50">
                 <tr>
                   <th className="px-3 py-2 text-start font-medium">
@@ -163,7 +162,6 @@ export function ManagerBuildingUnitsPanel({
                   </th>
                   <th className="px-3 py-2 text-start font-medium">קומה</th>
                   <th className="px-3 py-2 text-start font-medium">סוג</th>
-                  <th className="px-3 py-2 text-start font-medium">ועד חודשי</th>
                   <th className="px-3 py-2 text-start font-medium">דייר</th>
                   <th className="px-3 py-2 text-start font-medium w-[200px]">
                     שיוך דייר
@@ -178,9 +176,6 @@ export function ManagerBuildingUnitsPanel({
                       {u.floor_number ?? "—"}
                     </td>
                     <td className="px-3 py-2">{u.type ?? "—"}</td>
-                    <td className="px-3 py-2 tabular-nums">
-                      {u.monthly_fee ?? "—"}
-                    </td>
                     <td className="px-3 py-2">
                       {u.resident ? (
                         <span>

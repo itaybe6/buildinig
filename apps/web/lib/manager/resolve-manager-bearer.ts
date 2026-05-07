@@ -4,7 +4,7 @@ import {
   businessProfileIdFromJwtAppMetadata,
   inferBusinessProfileIdFromProfileLinks,
 } from "@my-project/shared";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export type ManagerBearerScope = {
   userId: string;
@@ -12,6 +12,27 @@ export type ManagerBearerScope = {
   tenantId: string;
   businessProfileId: string;
 };
+
+/** לקוח Supabase עם אותו JWT כמו בבקשת Bearer — לפעולות INSERT/UPDATE בתוקף המשתמש */
+export function createSupabaseForBearerRequest(
+  req: Request
+): SupabaseClient<Database> | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anon) return null;
+
+  const authHeader = req.headers.get("authorization");
+  const token =
+    authHeader?.startsWith("Bearer ") || authHeader?.startsWith("bearer ")
+      ? authHeader.slice(7)
+      : null;
+  if (!token) return null;
+
+  return createClient<Database>(url, anon, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
 
 /**
  * מאמת Bearer JWT של מנהל ומחזיר היקף ארגון + מזהי פרופיל (לממשק API / מובייל).

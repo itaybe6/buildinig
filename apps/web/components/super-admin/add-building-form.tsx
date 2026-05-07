@@ -25,6 +25,7 @@ export function SuperAdminAddBuildingForm({
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [floors, setFloors] = useState("1");
+  const [committeeFee, setCommitteeFee] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -33,12 +34,20 @@ export function SuperAdminAddBuildingForm({
     setError(null);
     setPending(true);
     const floorsCount = Math.max(1, Number.parseInt(floors, 10) || 1);
+    const feeRaw = committeeFee.trim().replace(",", ".");
+    const feeNum = Number.parseFloat(feeRaw);
+    if (committeeFee.trim() === "" || Number.isNaN(feeNum) || feeNum < 0) {
+      setPending(false);
+      setError("יש למלא דמי ועד בית (ש״ח, מספר חיובי או אפס).");
+      return;
+    }
     const supabase = createClient();
     const row = {
       business_profile_id: tenantId,
       address: address.trim(),
       city: city.trim(),
       floors_count: floorsCount,
+      committee_fee: String(feeNum),
     };
     const { data: inserted, error: insertError } = await supabase
       .from("buildings")
@@ -54,6 +63,7 @@ export function SuperAdminAddBuildingForm({
     setAddress("");
     setCity("");
     setFloors("1");
+    setCommitteeFee("");
     if (collapsible) setOpen(false);
     if (newId) {
       router.push(`/super-admin/tenants/${tenantId}/buildings/${newId}`);
@@ -96,6 +106,17 @@ export function SuperAdminAddBuildingForm({
           inputMode="numeric"
           value={floors}
           onChange={(ev) => setFloors(ev.target.value)}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="b-committee-fee">דמי ועד בית (₪ לחודש לדירה)</Label>
+        <Input
+          id="b-committee-fee"
+          inputMode="decimal"
+          required
+          placeholder="למשל 350"
+          value={committeeFee}
+          onChange={(ev) => setCommitteeFee(ev.target.value)}
         />
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

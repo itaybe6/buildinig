@@ -52,8 +52,8 @@ export default function EmployeeAllRequestsScreen() {
 
         const { data } = await supabase
           .from("service_requests")
-          .select("id, title, status, category, buildings ( address )")
-          .eq("business_profile_id", businessProfileId)
+          .select("id, title, status, category, buildings!inner ( address )")
+          .eq("buildings.business_profile_id", businessProfileId)
           .order("created_at", { ascending: false })
           .limit(120);
 
