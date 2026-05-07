@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
-import type { RequestCategory } from "@my-project/shared";
 
 export default async function ServiceTypesPage() {
   const ctx = await getManagerTenantContext();
@@ -20,17 +19,14 @@ export default async function ServiceTypesPage() {
   const { data: rows, error } = await supabase
     .from("service_types")
     .select(
-      "id, name, description, category, price_min, price_max, price_unit, is_active, created_at"
+      "id, name, description, price_min, price_max, is_active, created_at"
     )
     .eq("business_profile_id", ctx.businessProfileId)
     .order("name");
 
   const canManage = ctx.profile.role === "manager";
 
-  const tableRows: ServiceTypeTableRow[] = (rows ?? []).map((r) => ({
-    ...r,
-    category: r.category as RequestCategory,
-  }));
+  const tableRows: ServiceTypeTableRow[] = (rows ?? []) as ServiceTypeTableRow[];
 
   return (
     <div className="space-y-6">

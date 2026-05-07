@@ -14,6 +14,7 @@ export default function ManagerMoreStackLayout() {
       <Stack.Screen name="employees" options={{ title: "עובדים" }} />
       <Stack.Screen name="announcements" options={{ title: "מודעות" }} />
       <Stack.Screen name="payments" options={{ title: "תשלומים" }} />
+      <Stack.Screen name="payment-settings" options={{ title: "הגדרות תשלום" }} />
       <Stack.Screen name="service-types" options={{ title: "סוגי שירות" }} />
       <Stack.Screen name="tenant-settings" options={{ title: "הגדרות ארגון" }} />
       <Stack.Screen name="profile" options={{ title: "פרופיל" }} />

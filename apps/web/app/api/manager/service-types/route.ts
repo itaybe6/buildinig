@@ -37,10 +37,8 @@ export async function POST(req: Request) {
   let body: {
     name?: string;
     description?: string | null;
-    category?: string;
     price_min?: string | null;
     price_max?: string | null;
-    price_unit?: string | null;
     is_active?: boolean;
   };
   try {
@@ -58,7 +56,6 @@ export async function POST(req: Request) {
       body.description === undefined || body.description === null
         ? null
         : String(body.description),
-    category: String(body.category ?? ""),
     price_min:
       body.price_min === undefined || body.price_min === null
         ? null
@@ -67,10 +64,6 @@ export async function POST(req: Request) {
       body.price_max === undefined || body.price_max === null
         ? null
         : String(body.price_max),
-    price_unit:
-      body.price_unit === undefined || body.price_unit === null
-        ? null
-        : String(body.price_unit),
     is_active: body.is_active ?? true,
   });
 

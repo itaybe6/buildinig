@@ -4,10 +4,8 @@ import { webApiOrigin } from "@/lib/web-api-origin";
 export async function createServiceTypeViaWebApi(input: {
   name: string;
   description?: string | null;
-  category: string;
   price_min?: string | null;
   price_max?: string | null;
-  price_unit?: string | null;
   is_active: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const origin = webApiOrigin();
@@ -35,10 +33,8 @@ export async function createServiceTypeViaWebApi(input: {
     body: JSON.stringify({
       name: input.name,
       description: input.description ?? null,
-      category: input.category,
       price_min: input.price_min ?? null,
       price_max: input.price_max ?? null,
-      price_unit: input.price_unit ?? null,
       is_active: input.is_active,
     }),
   });

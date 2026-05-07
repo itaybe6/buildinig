@@ -365,6 +365,62 @@ export type Database = {
         };
         Relationships: [];
       };
+      payment_settings: {
+        Row: {
+          id: string;
+          building_id: string;
+          collection_day: number;
+          reminder_days_before: number;
+          reminder_message_template: string | null;
+          unpaid_alert_enabled: boolean;
+          unpaid_alert_days_after: number | null;
+          bank_name: string | null;
+          bank_branch: string | null;
+          bank_account_number: string | null;
+          bank_account_owner: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          building_id: string;
+          collection_day?: number;
+          reminder_days_before?: number;
+          reminder_message_template?: string | null;
+          unpaid_alert_enabled?: boolean;
+          unpaid_alert_days_after?: number | null;
+          bank_name?: string | null;
+          bank_branch?: string | null;
+          bank_account_number?: string | null;
+          bank_account_owner?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          building_id?: string;
+          collection_day?: number;
+          reminder_days_before?: number;
+          reminder_message_template?: string | null;
+          unpaid_alert_enabled?: boolean;
+          unpaid_alert_days_after?: number | null;
+          bank_name?: string | null;
+          bank_branch?: string | null;
+          bank_account_number?: string | null;
+          bank_account_owner?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payment_settings_building_id_fkey";
+            columns: ["building_id"];
+            isOneToOne: true;
+            referencedRelation: "buildings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           id: string;
@@ -437,10 +493,8 @@ export type Database = {
           business_profile_id: string | null;
           name: string;
           description: string | null;
-          category: Database["public"]["Enums"]["request_category"];
           price_min: string | null;
           price_max: string | null;
-          price_unit: string | null;
           is_active: boolean | null;
           created_at: string | null;
         };
@@ -449,10 +503,8 @@ export type Database = {
           business_profile_id?: string | null;
           name: string;
           description?: string | null;
-          category?: Database["public"]["Enums"]["request_category"];
           price_min?: string | null;
           price_max?: string | null;
-          price_unit?: string | null;
           is_active?: boolean | null;
           created_at?: string | null;
         };
@@ -461,10 +513,8 @@ export type Database = {
           business_profile_id?: string | null;
           name?: string;
           description?: string | null;
-          category?: Database["public"]["Enums"]["request_category"];
           price_min?: string | null;
           price_max?: string | null;
-          price_unit?: string | null;
           is_active?: boolean | null;
           created_at?: string | null;
         };
@@ -595,6 +645,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"] | null;
       };
       my_profile_id: { Args: Record<string, never>; Returns: string | null };
+      my_tenant_id: { Args: Record<string, never>; Returns: string | null };
     };
     Enums: {
       announcement_audience: "all" | "residents" | "employees";

@@ -5,14 +5,9 @@ import { createServiceTypeAction } from "@/app/(dashboard)/(manager)/service-typ
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { REQUEST_CATEGORY_LABEL, type RequestCategory } from "@my-project/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useFormState } from "react-dom";
-
-const CATEGORY_KEYS = Object.keys(
-  REQUEST_CATEGORY_LABEL
-) as RequestCategory[];
 
 export type AddServiceTypeFormProps = {
   /** מצב דיאלוג: ללא כותרת כפולה ועם מסגרת מינימלית */
@@ -91,23 +86,6 @@ export function AddServiceTypeForm({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="st-category">קטגוריה</Label>
-        <select
-          id="st-category"
-          name="category"
-          required
-          defaultValue="other"
-          className="flex h-11 min-h-[44px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:min-h-10"
-        >
-          {CATEGORY_KEYS.map((key) => (
-            <option key={key} value={key}>
-              {REQUEST_CATEGORY_LABEL[key]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid gap-2">
         <Label htmlFor="st-description">תיאור (אופציונלי)</Label>
         <textarea
           id="st-description"
@@ -142,20 +120,6 @@ export function AddServiceTypeForm({
             className="min-h-[44px] sm:min-h-10"
           />
         </div>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="st-price_unit">יחידת מחיר</Label>
-        <Input
-          id="st-price_unit"
-          name="price_unit"
-          placeholder="למשל job, hour, מ״ר"
-          dir="ltr"
-          className="min-h-[44px] sm:min-h-10"
-        />
-        <p className="text-xs text-muted-foreground">
-          ברירת מחדל במסד: <code className="rounded bg-muted px-1">job</code>
-        </p>
       </div>
 
       <div className="flex flex-row items-center gap-2">

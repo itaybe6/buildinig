@@ -7,10 +7,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  REQUEST_CATEGORY_LABEL,
-  type RequestCategory,
-} from "@my-project/shared";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
@@ -18,17 +14,11 @@ export type ServiceTypeTableRow = {
   id: string;
   name: string;
   description: string | null;
-  category: RequestCategory;
   price_min: string | null;
   price_max: string | null;
-  price_unit: string | null;
   is_active: boolean | null;
   created_at: string | null;
 };
-
-const CATEGORY_KEYS = Object.keys(
-  REQUEST_CATEGORY_LABEL
-) as RequestCategory[];
 
 function PencilIcon({ className }: { className?: string }) {
   return (
@@ -140,15 +130,13 @@ export function ServiceTypesTable({
   return (
     <>
       <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full min-w-[880px] text-sm">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="border-b bg-muted/50">
             <tr>
               <th className="px-3 py-2 text-start font-medium">שם</th>
-              <th className="px-3 py-2 text-start font-medium">קטגוריה</th>
               <th className="px-3 py-2 text-start font-medium">תיאור</th>
               <th className="px-3 py-2 text-start font-medium">מחיר מינ׳</th>
               <th className="px-3 py-2 text-start font-medium">מחיר מקס׳</th>
-              <th className="px-3 py-2 text-start font-medium">יחידה</th>
               <th className="px-3 py-2 text-start font-medium">פעיל</th>
               {canManage ? (
                 <th className="px-2 py-2 text-center font-medium">פעולות</th>
@@ -159,15 +147,11 @@ export function ServiceTypesTable({
             {rows.map((r) => (
               <tr key={r.id} className="border-b last:border-0">
                 <td className="px-3 py-2 font-medium">{r.name}</td>
-                <td className="px-3 py-2">
-                  {REQUEST_CATEGORY_LABEL[r.category]}
-                </td>
-                <td className="max-w-[200px] truncate px-3 py-2 text-muted-foreground">
+                <td className="max-w-[240px] truncate px-3 py-2 text-muted-foreground">
                   {r.description ?? "—"}
                 </td>
                 <td className="px-3 py-2 tabular-nums">{r.price_min ?? "—"}</td>
                 <td className="px-3 py-2 tabular-nums">{r.price_max ?? "—"}</td>
-                <td className="px-3 py-2">{r.price_unit ?? "—"}</td>
                 <td className="px-3 py-2">{r.is_active ? "כן" : "לא"}</td>
                 {canManage ? (
                   <td className="px-1 py-2">
@@ -240,24 +224,6 @@ export function ServiceTypesTable({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-st-category">קטגוריה</Label>
-              <select
-                id="edit-st-category"
-                name="category"
-                required
-                key={`cat-${editRow.id}`}
-                defaultValue={editRow.category}
-                className="flex h-11 min-h-[44px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:min-h-10"
-              >
-                {CATEGORY_KEYS.map((key) => (
-                  <option key={key} value={key}>
-                    {REQUEST_CATEGORY_LABEL[key]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid gap-2">
               <Label htmlFor="edit-st-description">תיאור (אופציונלי)</Label>
               <textarea
                 id="edit-st-description"
@@ -298,19 +264,6 @@ export function ServiceTypesTable({
                   className="min-h-[44px] sm:min-h-10"
                 />
               </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="edit-st-price_unit">יחידת מחיר</Label>
-              <Input
-                id="edit-st-price_unit"
-                name="price_unit"
-                dir="ltr"
-                key={`unit-${editRow.id}`}
-                defaultValue={editRow.price_unit ?? ""}
-                placeholder="למשל job, hour, מ״ר"
-                className="min-h-[44px] sm:min-h-10"
-              />
             </div>
 
             <div className="flex items-center gap-2">
@@ -361,9 +314,7 @@ export function ServiceTypesTable({
         </div>
         <div className="space-y-3 px-4 py-4">
           <p className="text-sm text-muted-foreground">
-            {deleteRow
-              ? `למחוק את «${deleteRow.name}»?`
-              : null}
+            {deleteRow ? `למחוק את «${deleteRow.name}»?` : null}
           </p>
           {deleteError ? (
             <p className="text-sm text-destructive">{deleteError}</p>

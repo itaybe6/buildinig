@@ -1,6 +1,5 @@
 import "server-only";
 
-import { requestCategorySchema } from "@my-project/shared";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@my-project/supabase";
 import type { CreateServiceTypeInput } from "@/lib/manager/create-service-type";
@@ -26,11 +25,6 @@ export async function updateServiceTypeForBusiness(
     return { ok: false, error: "חובה שם לשירות." };
   }
 
-  const catParse = requestCategorySchema.safeParse(input.category);
-  if (!catParse.success) {
-    return { ok: false, error: "קטגוריה לא תקינה." };
-  }
-
   const price_min = normalizeNumericField(input.price_min ?? null);
   const price_max = normalizeNumericField(input.price_max ?? null);
 
@@ -45,17 +39,13 @@ export async function updateServiceTypeForBusiness(
     }
   }
 
-  const price_unit = normalizeNumericField(input.price_unit ?? null);
-
   const { error } = await supabase
     .from("service_types")
     .update({
       name,
       description: input.description?.trim() ? input.description.trim() : null,
-      category: catParse.data,
       price_min,
       price_max,
-      price_unit,
       is_active: input.is_active ?? true,
     })
     .eq("id", serviceTypeId)

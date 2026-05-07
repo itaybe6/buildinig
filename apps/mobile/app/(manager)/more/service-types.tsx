@@ -1,14 +1,9 @@
 import { createServiceTypeViaWebApi } from "@/lib/create-service-type-via-web-api";
 import { resolveTenantScopeForUser } from "@/lib/tenant-context";
 import { supabase } from "@/lib/supabase";
-import {
-  REQUEST_CATEGORY_LABEL,
-  type RequestCategory,
-} from "@my-project/shared";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -19,18 +14,12 @@ import {
   View,
 } from "react-native";
 
-const CATEGORIES = Object.keys(
-  REQUEST_CATEGORY_LABEL
-) as RequestCategory[];
-
 type Row = {
   id: string;
   name: string;
   description: string | null;
-  category: string;
   price_min: string | null;
   price_max: string | null;
-  price_unit: string | null;
   is_active: boolean | null;
 };
 
@@ -43,11 +32,9 @@ export default function ManagerServiceTypesScreen() {
   const [formErr, setFormErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<RequestCategory>("other");
   const [description, setDescription] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [priceUnit, setPriceUnit] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   const load = useCallback(async () => {
@@ -75,9 +62,7 @@ export default function ManagerServiceTypesScreen() {
 
       const { data, error } = await supabase
         .from("service_types")
-        .select(
-          "id, name, description, category, price_min, price_max, price_unit, is_active"
-        )
+        .select("id, name, description, price_min, price_max, is_active")
         .eq("business_profile_id", businessProfileId)
         .order("name");
 
@@ -99,11 +84,9 @@ export default function ManagerServiceTypesScreen() {
 
   function resetForm() {
     setName("");
-    setCategory("other");
     setDescription("");
     setPriceMin("");
     setPriceMax("");
-    setPriceUnit("");
     setIsActive(true);
     setFormErr(null);
   }
@@ -120,10 +103,8 @@ export default function ManagerServiceTypesScreen() {
     const result = await createServiceTypeViaWebApi({
       name: n,
       description: description.trim() || null,
-      category,
       price_min: priceMin.trim() || null,
       price_max: priceMax.trim() || null,
-      price_unit: priceUnit.trim() || null,
       is_active: isActive,
     });
     setSaving(false);
@@ -188,17 +169,13 @@ export default function ManagerServiceTypesScreen() {
               >
                 <Text className="font-semibold">{r.name}</Text>
                 <Text className="text-sm text-gray-600">
-                  {REQUEST_CATEGORY_LABEL[
-                    r.category as RequestCategory
-                  ] ?? r.category}{" "}
-                  · {r.is_active ? "פעיל" : "לא פעיל"}
+                  {r.is_active ? "פעיל" : "לא פעיל"}
                 </Text>
                 {r.description ? (
                   <Text className="mt-2 text-sm leading-6">{r.description}</Text>
                 ) : null}
                 <Text className="mt-1 text-xs text-gray-500">
-                  מחיר: {r.price_min ?? "—"} – {r.price_max ?? "—"}
-                  {r.price_unit ? ` · ${r.price_unit}` : ""}
+                  טווח מחיר: {r.price_min ?? "—"} – {r.price_max ?? "—"}
                 </Text>
               </View>
             ))}
@@ -226,7 +203,7 @@ export default function ManagerServiceTypesScreen() {
             >
               <Text className="mb-1 text-lg font-bold">סוג שירות חדש</Text>
               <Text className="mb-4 text-sm text-gray-600">
-                כל השדות לפי טבלת service_types בארגון שלך.
+                שם, תיאור, טווח מחיר וסטטוס פעיל.
               </Text>
 
               <ScrollView
@@ -242,23 +219,6 @@ export default function ManagerServiceTypesScreen() {
                   value={name}
                   onChangeText={setName}
                 />
-
-                <Text className="mb-1 text-xs font-medium text-gray-700">
-                  קטגוריה
-                </Text>
-                <View className="mb-3 flex-row flex-wrap gap-2">
-                  {CATEGORIES.map((c) => (
-                    <Pressable
-                      key={c}
-                      className={`rounded-lg border px-3 py-2.5 ${category === c ? "border-blue-600 bg-blue-50" : "border-gray-300"}`}
-                      onPress={() => setCategory(c)}
-                    >
-                      <Text className="text-center text-sm font-medium">
-                        {REQUEST_CATEGORY_LABEL[c]}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
 
                 <Text className="mb-1 text-xs font-medium text-gray-700">
                   תיאור (אופציונלי)
@@ -290,16 +250,6 @@ export default function ManagerServiceTypesScreen() {
                     onChangeText={setPriceMax}
                   />
                 </View>
-
-                <Text className="mb-1 text-xs font-medium text-gray-700">
-                  יחידת מחיר (טקסט חופשי)
-                </Text>
-                <TextInput
-                  className="mb-3 min-h-[44px] rounded-lg border border-gray-300 px-3 py-2.5 text-left"
-                  placeholder="למשל job, hour"
-                  value={priceUnit}
-                  onChangeText={setPriceUnit}
-                />
 
                 <Pressable
                   className="mb-3 flex-row items-center gap-2"
