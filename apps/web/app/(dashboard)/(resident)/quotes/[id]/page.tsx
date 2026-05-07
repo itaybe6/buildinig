@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
-import { QUOTE_STATUS_LABEL } from "@my-project/shared";
+import { formatILS, QUOTE_STATUS_LABEL } from "@my-project/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -25,7 +25,7 @@ export default async function ResidentQuoteDetailPage({
   const { data: row, error } = await supabase
     .from("quote_requests")
     .select(
-      "title, description, status, preferred_date, created_at, requested_by"
+      "title, description, status, preferred_date, created_at, requested_by, image_urls, resident_proposed_amount"
     )
     .eq("id", id)
     .eq("business_profile_id", ctx.businessProfileId)
@@ -53,7 +53,7 @@ export default async function ResidentQuoteDetailPage({
           href="/quotes"
           className="text-sm text-muted-foreground underline-offset-4 hover:underline"
         >
-          ← חזרה להצעות
+          ← חזרה לשירותים
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">
           {row.title}
@@ -76,6 +76,13 @@ export default async function ResidentQuoteDetailPage({
               row.status as keyof typeof QUOTE_STATUS_LABEL
             ] ?? row.status}
           </p>
+          {row.resident_proposed_amount != null &&
+          String(row.resident_proposed_amount).trim() !== "" ? (
+            <p>
+              <span className="font-medium">מחיר מוצע: </span>
+              {formatILS(row.resident_proposed_amount)}
+            </p>
+          ) : null}
           {row.preferred_date ? (
             <p>
               <span className="font-medium">תאריך מועדף: </span>
@@ -86,6 +93,21 @@ export default async function ResidentQuoteDetailPage({
             <p className="whitespace-pre-wrap text-muted-foreground">
               {row.description}
             </p>
+          ) : null}
+          {row.image_urls?.length ? (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {row.image_urls.map((url) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  תמונה
+                </a>
+              ))}
+            </div>
           ) : null}
         </CardContent>
       </Card>

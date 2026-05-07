@@ -532,6 +532,7 @@ export type Database = {
           description: string | null;
           image_urls: string[] | null;
           preferred_date: string | null;
+          resident_proposed_amount: string | null;
           status: Database["public"]["Enums"]["quote_status"];
           created_at: string | null;
           updated_at: string | null;
@@ -547,6 +548,7 @@ export type Database = {
           description?: string | null;
           image_urls?: string[] | null;
           preferred_date?: string | null;
+          resident_proposed_amount?: string | null;
           status?: Database["public"]["Enums"]["quote_status"];
           created_at?: string | null;
           updated_at?: string | null;
@@ -562,6 +564,7 @@ export type Database = {
           description?: string | null;
           image_urls?: string[] | null;
           preferred_date?: string | null;
+          resident_proposed_amount?: string | null;
           status?: Database["public"]["Enums"]["quote_status"];
           created_at?: string | null;
           updated_at?: string | null;

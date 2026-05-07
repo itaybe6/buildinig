@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { cn } from "@my-project/ui-web";
 import { LogoutButton } from "@/components/logout-button";
 import { MobileDashboardNav } from "@/components/mobile-dashboard-nav";
+import { ResidentSidebarAccount } from "@/components/resident/resident-sidebar-account";
 import { SuperAdminRouteGuard } from "@/components/super-admin-route-guard";
 import { getSidebarSections, type NavItem } from "@/lib/nav";
 
@@ -63,6 +64,7 @@ export function DashboardShell({
   contentDir,
   managerBrand,
   navBadges,
+  residentSidebar,
   children,
 }: {
   role: UserRole;
@@ -73,6 +75,8 @@ export function DashboardShell({
   managerBrand?: { name: string; logoUrl: string | null };
   /** מפתח = href מ-nav (למשל מונה קריאות חדשות ליד `/service-requests`) */
   navBadges?: Record<string, number>;
+  /** דייר — פרטים לתחתית הסרגל / תפריט מובייל */
+  residentSidebar?: { phone: string | null };
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -107,13 +111,15 @@ export function DashboardShell({
             </div>
           </div>
         ) : null}
-        <div className="mb-6 px-2">
-          <p className="text-xs text-muted-foreground">מחובר/ת</p>
-          <p className="truncate font-semibold">{displayName}</p>
-          {role === "super_admin" ? (
-            <p className="mt-1 text-xs text-muted-foreground">מנהל-על</p>
-          ) : null}
-        </div>
+        {!residentSidebar ? (
+          <div className="mb-6 px-2">
+            <p className="text-xs text-muted-foreground">מחובר/ת</p>
+            <p className="truncate font-semibold">{displayName}</p>
+            {role === "super_admin" ? (
+              <p className="mt-1 text-xs text-muted-foreground">מנהל-על</p>
+            ) : null}
+          </div>
+        ) : null}
         <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto">
           {sections.groups.map((group, idx) => (
             <div key={idx}>
@@ -142,6 +148,12 @@ export function DashboardShell({
             </div>
           ) : null}
         </nav>
+        {residentSidebar ? (
+          <ResidentSidebarAccount
+            displayName={displayName}
+            phone={residentSidebar.phone}
+          />
+        ) : null}
         <div className="mt-4 border-t pt-4">
           <LogoutButton className="w-full justify-start text-muted-foreground" />
         </div>
@@ -152,6 +164,7 @@ export function DashboardShell({
           displayName={displayName}
           managerBrand={managerBrand}
           navBadges={navBadges}
+          residentSidebar={residentSidebar}
         />
         <SuperAdminRouteGuard role={role}>
           <div className="flex-1 p-4 md:p-6">{children}</div>

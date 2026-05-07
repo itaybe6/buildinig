@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@my-project/ui-web";
-import { QUOTE_STATUS_LABEL } from "@my-project/shared";
+import { formatILS, QUOTE_STATUS_LABEL } from "@my-project/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -115,6 +115,13 @@ export default async function QuoteRequestDetailPage({
               {requester?.phone ? `(${requester.phone})` : ""}
             </p>
             <p>סוג שירות: {st?.name ?? "—"}</p>
+            {qr.resident_proposed_amount != null &&
+            String(qr.resident_proposed_amount).trim() !== "" ? (
+              <p className="font-medium">
+                מחיר מוצע על ידי הדייר:{" "}
+                {formatILS(qr.resident_proposed_amount)}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
         <Card>

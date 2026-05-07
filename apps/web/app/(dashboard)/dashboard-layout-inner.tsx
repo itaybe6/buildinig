@@ -44,6 +44,11 @@ export async function DashboardLayoutInner({
       contentDir={contentDir}
       managerBrand={managerBrand}
       navBadges={navBadges}
+      residentSidebar={
+        role === "resident"
+          ? { phone: profile.phone ?? null }
+          : undefined
+      }
     >
       {children}
     </DashboardShell>

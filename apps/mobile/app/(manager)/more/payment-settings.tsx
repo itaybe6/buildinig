@@ -51,12 +51,19 @@ function applyRowToState(row: {
   };
 }
 
+function displayOrDash(value: string) {
+  const t = value.trim();
+  return t.length ? t : "—";
+}
+
 export default function ManagerPaymentSettingsScreen() {
   const [initErr, setInitErr] = useState<string | null>(null);
   const [buildings, setBuildings] = useState<BuildingRow[]>([]);
   const [buildingId, setBuildingId] = useState("");
   const [loadingRow, setLoadingRow] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [settingsExist, setSettingsExist] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [collectionDay, setCollectionDay] = useState(DEFAULTS.collection_day);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(
@@ -147,54 +154,63 @@ export default function ManagerPaymentSettingsScreen() {
     };
   }, []);
 
-  const loadSettings = useCallback(
-    async (bid: string) => {
-      if (!bid) return;
-      setLoadingRow(true);
-      const { data, error } = await supabase
-        .from("payment_settings")
-        .select(
-          "collection_day, reminder_days_before, reminder_message_template, unpaid_alert_enabled, unpaid_alert_days_after, bank_name, bank_branch, bank_account_number, bank_account_owner"
-        )
-        .eq("building_id", bid)
-        .maybeSingle();
+  const loadSettings = useCallback(async (bid: string): Promise<void> => {
+    if (!bid) return;
+    setLoadingRow(true);
+    const { data, error } = await supabase
+      .from("payment_settings")
+      .select(
+        "collection_day, reminder_days_before, reminder_message_template, unpaid_alert_enabled, unpaid_alert_days_after, bank_name, bank_branch, bank_account_number, bank_account_owner"
+      )
+      .eq("building_id", bid)
+      .maybeSingle();
 
-      if (error) {
-        Alert.alert("שגיאה", error.message);
-        setLoadingRow(false);
-        return;
-      }
-
-      if (data) {
-        const s = applyRowToState(data);
-        setCollectionDay(s.collection_day);
-        setReminderDaysBefore(s.reminder_days_before);
-        setReminderTemplate(s.reminder_message_template);
-        setUnpaidAlertEnabled(s.unpaid_alert_enabled);
-        setUnpaidAlertDaysAfter(s.unpaid_alert_days_after);
-        setBankName(s.bank_name);
-        setBankBranch(s.bank_branch);
-        setBankAccountNumber(s.bank_account_number);
-        setBankAccountOwner(s.bank_account_owner);
-      } else {
-        setCollectionDay(DEFAULTS.collection_day);
-        setReminderDaysBefore(DEFAULTS.reminder_days_before);
-        setReminderTemplate(DEFAULTS.reminder_message_template);
-        setUnpaidAlertEnabled(DEFAULTS.unpaid_alert_enabled);
-        setUnpaidAlertDaysAfter(DEFAULTS.unpaid_alert_days_after);
-        setBankName(DEFAULTS.bank_name);
-        setBankBranch(DEFAULTS.bank_branch);
-        setBankAccountNumber(DEFAULTS.bank_account_number);
-        setBankAccountOwner(DEFAULTS.bank_account_owner);
-      }
+    if (error) {
+      Alert.alert("שגיאה", error.message);
+      setSettingsExist(false);
       setLoadingRow(false);
-    },
-    []
-  );
+      return;
+    }
+
+    setSettingsExist(!!data);
+
+    if (data) {
+      const s = applyRowToState(data);
+      setCollectionDay(s.collection_day);
+      setReminderDaysBefore(s.reminder_days_before);
+      setReminderTemplate(s.reminder_message_template);
+      setUnpaidAlertEnabled(s.unpaid_alert_enabled);
+      setUnpaidAlertDaysAfter(s.unpaid_alert_days_after);
+      setBankName(s.bank_name);
+      setBankBranch(s.bank_branch);
+      setBankAccountNumber(s.bank_account_number);
+      setBankAccountOwner(s.bank_account_owner);
+    } else {
+      setCollectionDay(DEFAULTS.collection_day);
+      setReminderDaysBefore(DEFAULTS.reminder_days_before);
+      setReminderTemplate(DEFAULTS.reminder_message_template);
+      setUnpaidAlertEnabled(DEFAULTS.unpaid_alert_enabled);
+      setUnpaidAlertDaysAfter(DEFAULTS.unpaid_alert_days_after);
+      setBankName(DEFAULTS.bank_name);
+      setBankBranch(DEFAULTS.bank_branch);
+      setBankAccountNumber(DEFAULTS.bank_account_number);
+      setBankAccountOwner(DEFAULTS.bank_account_owner);
+    }
+    setLoadingRow(false);
+  }, []);
 
   useEffect(() => {
     if (buildingId) void loadSettings(buildingId);
   }, [buildingId, loadSettings]);
+
+  useEffect(() => {
+    setIsEditing(false);
+  }, [buildingId]);
+
+  async function handleCancelEdit() {
+    await loadSettings(buildingId);
+    setIsEditing(false);
+  }
 
   async function onSave() {
     if (!buildingId) return;
@@ -247,6 +263,8 @@ export default function ManagerPaymentSettingsScreen() {
       Alert.alert("שגיאה", error.message);
       return;
     }
+    await loadSettings(buildingId);
+    setIsEditing(false);
     Alert.alert("נשמר", "ההגדרות נשמרו בהצלחה.");
   }
 
@@ -269,6 +287,11 @@ export default function ManagerPaymentSettingsScreen() {
   const inputCls =
     "mt-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-base text-slate-900";
 
+  const readOnlyBox =
+    "mt-1 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-base text-slate-900";
+
+  const buildingPickDisabled = loadingRow || saving || isEditing;
+
   return (
     <ScrollView
       className="flex-1 bg-white px-4 pt-4"
@@ -281,27 +304,130 @@ export default function ManagerPaymentSettingsScreen() {
       {buildings.length > 1 ? (
         <View className="mb-6">
           <Text className="mb-2 text-sm font-medium text-slate-800">בניין</Text>
-          <View className="gap-2">
+          <View className="gap-2 opacity-100">
             {buildings.map((b) => (
               <Pressable
                 key={b.id}
-                onPress={() => setBuildingId(b.id)}
+                onPress={() => {
+                  if (!buildingPickDisabled) setBuildingId(b.id);
+                }}
+                disabled={buildingPickDisabled}
                 className={`rounded-lg border px-3 py-3 ${
                   buildingId === b.id
                     ? "border-blue-600 bg-blue-50"
                     : "border-slate-200 bg-white"
-                }`}
+                } ${buildingPickDisabled ? "opacity-50" : ""}`}
               >
                 <Text className="text-base">{b.label}</Text>
               </Pressable>
             ))}
           </View>
+          {isEditing ? (
+            <Text className="mt-2 text-xs text-slate-500">
+              יציאה ממצב עריכה או שמירה מאפשרות החלפת בניין.
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
       {loadingRow ? (
         <View className="py-8 items-center">
           <ActivityIndicator />
+          <Text className="mt-2 text-sm text-slate-500">טוען הגדרות…</Text>
+        </View>
+      ) : !isEditing ? (
+        <View className="gap-6 pb-10">
+          {!settingsExist ? (
+            <View className="rounded-xl border border-slate-200 bg-white p-4">
+              <Text className="mb-1 text-lg font-semibold text-slate-900">
+                עדיין לא הוגדר
+              </Text>
+              <Text className="mb-4 text-sm text-slate-600">
+                לא נשמרו הגדרות תשלום לבניין שנבחר. ניתן להגדיר אותן כעת.
+              </Text>
+              <Pressable
+                onPress={() => setIsEditing(true)}
+                className="self-start rounded-lg bg-blue-600 px-4 py-3 active:bg-blue-700"
+              >
+                <Text className="text-center text-base font-semibold text-white">
+                  הגדר עכשיו
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <View className="flex-row flex-wrap items-center justify-between gap-3">
+                <Text className="flex-1 text-sm text-slate-600">
+                  סקירת ההגדרות השמורות.
+                </Text>
+                <Pressable
+                  onPress={() => setIsEditing(true)}
+                  className="rounded-lg border border-blue-600 bg-white px-4 py-2 active:bg-slate-50"
+                >
+                  <Text className="font-semibold text-blue-700">עריכה</Text>
+                </Pressable>
+              </View>
+
+              <View>
+                <Text className="mb-2 text-lg font-semibold text-slate-900">
+                  הגדרות גביה
+                </Text>
+                <Text className="text-xs text-slate-500">יום גביה בחודש</Text>
+                <Text className={readOnlyBox}>{collectionDay}</Text>
+                <Text className="mt-3 text-xs text-slate-500">
+                  ימים לפני הגביה — תזכורת
+                </Text>
+                <Text className={readOnlyBox}>{reminderDaysBefore}</Text>
+              </View>
+
+              <View>
+                <Text className="mb-2 text-lg font-semibold text-slate-900">
+                  תבנית הודעת תזכורת
+                </Text>
+                <Text className={`${readOnlyBox} min-h-[80px]`}>
+                  {displayOrDash(reminderTemplate)}
+                </Text>
+              </View>
+
+              <View>
+                <Text className="mb-2 text-lg font-semibold text-slate-900">
+                  התראה על אי־תשלום
+                </Text>
+                <Text className="text-xs text-slate-500">סטטוס</Text>
+                <Text className={readOnlyBox}>
+                  {unpaidAlertEnabled ? "מופעל" : "כבוי"}
+                </Text>
+                {unpaidAlertEnabled ? (
+                  <>
+                    <Text className="mt-3 text-xs text-slate-500">
+                      ימים אחרי יום הגביה
+                    </Text>
+                    <Text className={readOnlyBox}>{unpaidAlertDaysAfter}</Text>
+                  </>
+                ) : null}
+              </View>
+
+              <View>
+                <Text className="mb-2 text-lg font-semibold text-slate-900">
+                  פרטי חשבון בנק
+                </Text>
+                <Text className="text-xs text-slate-500">שם הבנק</Text>
+                <Text className={readOnlyBox}>{displayOrDash(bankName)}</Text>
+                <Text className="mt-3 text-xs text-slate-500">מספר סניף</Text>
+                <Text className={readOnlyBox}>{displayOrDash(bankBranch)}</Text>
+                <Text className="mt-3 text-xs text-slate-500">מספר חשבון</Text>
+                <Text className={readOnlyBox}>
+                  {displayOrDash(bankAccountNumber)}
+                </Text>
+                <Text className="mt-3 text-xs text-slate-500">
+                  שם בעל החשבון
+                </Text>
+                <Text className={readOnlyBox}>
+                  {displayOrDash(bankAccountOwner)}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       ) : (
         <View className="gap-6 pb-10">
@@ -437,15 +563,26 @@ export default function ManagerPaymentSettingsScreen() {
             />
           </View>
 
-          <Pressable
-            onPress={() => void onSave()}
-            disabled={saving || loadingRow}
-            className="rounded-lg bg-blue-600 px-4 py-3 active:bg-blue-700 disabled:opacity-50"
-          >
-            <Text className="text-center text-base font-semibold text-white">
-              {saving ? "שומר…" : "שמור הגדרות"}
-            </Text>
-          </Pressable>
+          <View className="gap-3">
+            <Pressable
+              onPress={() => void onSave()}
+              disabled={saving || loadingRow}
+              className="rounded-lg bg-blue-600 px-4 py-3 active:bg-blue-700 disabled:opacity-50"
+            >
+              <Text className="text-center text-base font-semibold text-white">
+                {saving ? "שומר…" : "שמור הגדרות"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void handleCancelEdit()}
+              disabled={saving}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-3 active:bg-slate-50 disabled:opacity-50"
+            >
+              <Text className="text-center text-base font-semibold text-slate-800">
+                ביטול
+              </Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </ScrollView>

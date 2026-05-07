@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from "@my-project/ui-mobile";
+import { Redirect } from "expo-router";
 
 export default function NewQuoteRequestScreen() {
-  return <PlaceholderScreen title="בקשת הצעת מחיר חדשה" />;
+  return <Redirect href="/(resident)/quotes" />;
 }

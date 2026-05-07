@@ -20,11 +20,15 @@ export default function ResidentTabsLayout() {
       />
       <Tabs.Screen
         name="quotes"
-        options={{ title: "הצעות", tabBarLabel: "הצעות", headerShown: false }}
+        options={{ title: "שירותים", tabBarLabel: "שירותים", headerShown: false }}
       />
       <Tabs.Screen
         name="payments"
         options={{ title: "תשלומים", tabBarLabel: "תשלומים" }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{ title: "חשבון", tabBarLabel: "חשבון" }}
       />
     </Tabs>
   );

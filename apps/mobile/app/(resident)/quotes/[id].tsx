@@ -1,8 +1,10 @@
-import { QUOTE_STATUS_LABEL } from "@my-project/shared";
+import { formatILS, QUOTE_STATUS_LABEL } from "@my-project/shared";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
+  Linking,
   Pressable,
   ScrollView,
   Text,
@@ -22,6 +24,8 @@ export default function ResidentQuoteDetailScreen() {
     status: keyof typeof QUOTE_STATUS_LABEL;
     preferred_date: string | null;
     created_at: string | null;
+    image_urls: string[] | null;
+    resident_proposed_amount: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -63,7 +67,7 @@ export default function ResidentQuoteDetailScreen() {
         const { data, error } = await supabase
           .from("quote_requests")
           .select(
-            "title, description, status, preferred_date, created_at, requested_by"
+            "title, description, status, preferred_date, created_at, requested_by, image_urls, resident_proposed_amount"
           )
           .eq("id", String(id))
           .eq("business_profile_id", businessProfileId)
@@ -112,6 +116,8 @@ export default function ResidentQuoteDetailScreen() {
     );
   }
 
+  const imgs = row.image_urls ?? [];
+
   return (
     <ScrollView className="flex-1 bg-white px-4 pt-4">
       <Text className="mb-2 text-2xl font-bold">{row.title}</Text>
@@ -126,11 +132,33 @@ export default function ResidentQuoteDetailScreen() {
           נוצר: {new Date(row.created_at).toLocaleString("he-IL")}
         </Text>
       ) : null}
+      {row.resident_proposed_amount != null &&
+      String(row.resident_proposed_amount).trim() !== "" ? (
+        <Text className="mb-4 text-base font-medium">
+          מחיר מוצע: {formatILS(row.resident_proposed_amount)}
+        </Text>
+      ) : null}
       {row.description ? (
-        <Text className="text-base leading-7">{row.description}</Text>
+        <Text className="mb-4 text-base leading-7">{row.description}</Text>
       ) : (
-        <Text className="text-gray-500">אין תיאור נוסף.</Text>
+        <Text className="mb-4 text-gray-500">אין תיאור נוסף.</Text>
       )}
+      {imgs.length > 0 ? (
+        <View className="mb-8 gap-3">
+          <Text className="mb-2 font-medium text-slate-800">תמונות</Text>
+          <View className="flex-row flex-wrap gap-3">
+            {imgs.map((url) => (
+              <Pressable key={url} onPress={() => Linking.openURL(url)}>
+                <Image
+                  source={{ uri: url }}
+                  className="h-28 w-28 rounded-lg bg-slate-100"
+                  resizeMode="cover"
+                />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

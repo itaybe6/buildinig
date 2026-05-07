@@ -9,8 +9,8 @@ export default function QuotesStackLayout() {
         headerRight: () => <LogoutButton />,
       }}
     >
-      <Stack.Screen name="index" options={{ title: "בקשות הצעת מחיר" }} />
-      <Stack.Screen name="new" options={{ title: "בקשה חדשה" }} />
+      <Stack.Screen name="index" options={{ title: "שירותים" }} />
+      <Stack.Screen name="new" options={{ title: "שירותים", headerShown: false }} />
       <Stack.Screen name="[id]" options={{ title: "פרטי בקשה" }} />
     </Stack>
   );

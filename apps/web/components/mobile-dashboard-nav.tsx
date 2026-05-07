@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@my-project/ui-web";
 import { LogoutButton } from "@/components/logout-button";
+import { ResidentSidebarAccount } from "@/components/resident/resident-sidebar-account";
 import { getSidebarSections, type NavItem } from "@/lib/nav";
 
 function NavLinks({
@@ -63,11 +64,13 @@ export function MobileDashboardNav({
   displayName,
   managerBrand,
   navBadges,
+  residentSidebar,
 }: {
   role: UserRole;
   displayName: string;
   managerBrand?: { name: string; logoUrl: string | null };
   navBadges?: Record<string, number>;
+  residentSidebar?: { phone: string | null };
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -167,6 +170,12 @@ export function MobileDashboardNav({
                   </div>
                 ) : null}
               </nav>
+              {residentSidebar ? (
+                <ResidentSidebarAccount
+                  displayName={displayName}
+                  phone={residentSidebar.phone}
+                />
+              ) : null}
               <div className="mt-4 border-t pt-4">
                 <LogoutButton
                   variant="outline"

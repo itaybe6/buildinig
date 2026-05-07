@@ -17,6 +17,8 @@ export type AuthProfile = {
   userId: string;
   profileId: string;
   fullName: string;
+  /** מטבלת profiles — תצוגה לדייר ועוד */
+  phone: string | null;
   role: UserRole;
   tenantId: string | null;
   /** FK ל-business_profiles — סינון רשומות לפי עסק */
@@ -28,6 +30,7 @@ export type AuthProfile = {
 type ProfileRowWithBp = {
   id: string;
   full_name: string;
+  phone: string | null;
   role: UserRole;
   business_profile_id: string | null;
   business_profiles:
@@ -57,7 +60,7 @@ export const getAuthProfile = cache(
     const { data: row, error } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, role, business_profile_id, business_profiles(name, logo_url)"
+        "id, full_name, phone, role, business_profile_id, business_profiles(name, logo_url)"
       )
       .eq("auth_user_id", user.id)
       .maybeSingle();
@@ -101,6 +104,7 @@ export const getAuthProfile = cache(
       userId: user.id,
       profileId: typed.id,
       fullName: typed.full_name,
+      phone: typed.phone ?? null,
       role: typed.role as UserRole,
       tenantId: businessProfileId,
       businessProfileId,

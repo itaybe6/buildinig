@@ -1,4 +1,4 @@
-import { QUOTE_STATUS_LABEL } from "@my-project/shared";
+import { formatILS, QUOTE_STATUS_LABEL } from "@my-project/shared";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -22,6 +22,7 @@ export default function ManagerQuoteRequestDetailScreen() {
     status: keyof typeof QUOTE_STATUS_LABEL;
     preferred_date: string | null;
     created_at: string | null;
+    resident_proposed_amount: string | null;
     buildings: unknown;
     units: unknown;
     service_types: unknown;
@@ -61,6 +62,7 @@ export default function ManagerQuoteRequestDetailScreen() {
             status,
             preferred_date,
             created_at,
+            resident_proposed_amount,
             buildings ( address, city ),
             units ( unit_number ),
             service_types ( name, description )
@@ -143,6 +145,13 @@ export default function ManagerQuoteRequestDetailScreen() {
         <Text className="mb-4 text-sm text-gray-700">
           שירות: {st.name}
           {st.description ? ` — ${st.description}` : ""}
+        </Text>
+      ) : null}
+      {row.resident_proposed_amount != null &&
+      String(row.resident_proposed_amount).trim() !== "" ? (
+        <Text className="mb-4 text-sm font-medium text-gray-800">
+          מחיר מוצע על ידי הדייר:{" "}
+          {formatILS(row.resident_proposed_amount)}
         </Text>
       ) : null}
       {row.preferred_date ? (
